@@ -1,0 +1,18 @@
+identifier: homocysteine -> methionine
+via: folate-cycle
+type: unidirectional
+reagents:
+  - homocysteine
+  - 5-MTHF
+enzymes: 
+  - MS
+coenzymes:
+  - B12
+products:
+  - methionine
+byproducts:
+  - THF
+
+references:
+  - https://upload.wikimedia.org/wikipedia/commons/d/d5/MTHFR_metabolism.svg
+

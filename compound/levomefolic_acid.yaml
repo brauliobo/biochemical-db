@@ -1,0 +1,14 @@
+identifiers: 
+  - 5-MTHF
+  - 5,10-MTHF
+names:
+  - Levomefolic acid
+active_form_of:
+  - folate
+category: activated-form
+pH: acid
+origin: natural
+sources:
+  - folate
+reference: https://en.wikipedia.org/wiki/Levomefolic_acid
+

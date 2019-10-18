@@ -1,0 +1,12 @@
+identifiers:
+  - folate
+  - b9
+names:
+  - Folate
+  - Vitamin B9
+  - Folacin
+category: nutrient
+essential: true
+RDI: 400µg
+
+reference: https://en.wikipedia.org/wiki/Folate

@@ -1,0 +1,11 @@
+{
+  "identifier": "5MTHF->THF",
+  "type": "unidirectional",
+  "reagents": [
+    "5MTHF",
+    "MS",
+    "B12"
+  ],
+  "products": [
+  ]
+}
