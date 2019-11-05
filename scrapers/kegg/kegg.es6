@@ -22,23 +22,48 @@ kegg = {
             substrates: this.h.compounds('Substrate'),
             products:   this.h.compounds('Product'),
             references: this.h.references(),
-            //genes:      this.h.genes('Genes'),
+            cross_refs: this.h.externalLinks(),
+            genes:      this.h.genes('Genes'),
+            
           })
         })
     })
   },
 
   h: {
+    db_links: {
+      ExplorEnz: 'explorenz_url',
+      IUBMB:     'iubmb_url',
+      ExPASy:    'expasy_url',
+      BRENDA:    'brenda_url',
+    },
+    db_ids: {
+
+    },
+    
+    externalLinks() {
+      var h = 'Other DBs'
+      var refs = {}
+      this.rowElements(h).map((r,i) => {
+        var v = this.rowValue(r, 1).split(/[, ]/)[0]
+        var l = this.db_links[v]
+        if (l) refs[l] = this.rowLink(r).url
+      })
+      return refs
+    },
+
     references() {
       var h = 'Reference'
       return this.rows(h).map((r, i) => {
         var v = this.rowValue(r)
+        var journal = this.rowValue(this.subrow('Title', 'Journal', i+1))
         return {
           number:  v.capture(/(\d+)\s/),
           pmid:    v.capture(/\[PMID:(\d+)\]/),
+          doi_id:  journal.capture(/DOI:([\d\.\/()\-]+)/),
           authors: this.rowValue(this.subrow(h, 'Authors', i+1)).split(','),
           title:   this.rowValue(this.subrow('Authors', 'Title', i+1)),
-          journal: this.rowValue(this.subrow('Title', 'Journal', i+1)),
+          journal: journal,
         }
       })
     },
@@ -57,7 +82,7 @@ kegg = {
     compounds(h) {
       return this.hValue(h).split('\n').map((c, i) => {
         c = c.replace(/;$/,'')
-        var link = this.rowLink(h, i+1)
+        var link = this.headerLink(h, i+1)
         return {
           name:     c.capture(/(.+) \[CPD/),
           kegg_id:  link.text,
@@ -68,7 +93,7 @@ kegg = {
 
     reaction() {
       var h    = 'Reaction(IUBMB)'
-      var link = this.rowLink(h)
+      var link = this.headerLink(h)
       return {
         representation: this.hValue(h).capture(/(.+) \[RN/),
         kegg_id:        link.text,
@@ -76,19 +101,24 @@ kegg = {
       }
     },
 
-    rowLink(h, i = 1) {
-      var link = this.row(h).querySelector(`a:nth-of-type(${i})`)
+    headerLink(h, i = 1) {
+      return this.rowLink(this.row(h), i)
+    },
+
+    rowLink(row, i = 1) {
+      var link = row.querySelector(`a:nth-of-type(${i})`)
       return this.link(link)
     },
 
     link(el) {
+      var url = el.href.startsWith('/') ? `${kegg.baseUrl}${el.href}` : el.href
       return {
         text: el.innerText,
-        url:  `${kegg.baseUrl}${el.href}`,
+        url:  url,
       }
     },
 
-    rowValue(row, {selector = 'td'} = {}) {
+    rowValue(row, i = 1, {selector = `td:nth-of-type(${i})`} = {}) {
       return this.text(row.querySelector(selector))
     },
 
