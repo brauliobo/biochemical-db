@@ -24,7 +24,29 @@ kegg = {
             references: this.h.references(),
             cross_refs: this.h.externalLinks(),
             genes:      this.h.genes('Genes'),
-            
+          })
+        })
+    })
+  },
+
+  compound(id) {
+    var url = `${this.baseUrl}/dbget-bin/www_bget?cpd:${id}`
+    return new Promise(resolve => {
+      osmosis.get(url)
+        .find('form table table')
+        .then(table => {
+          if (table.index > 0) return
+          this.table = table
+          resolve({
+            identifier: this.h.hValue('Entry').capture(/(C\d+)/),
+            names:      this.h.hValue('Name').split('\n').map(v => v.replace(/;$/,'')),
+            formula:    this.h.hValue('Formula'),
+            exact_mass: this.h.hValue('Exact mass'),
+            mol_weight: this.h.hValue('Mol weight'),
+            reactions:  this.h.reactions(),
+            enzymes:    this.h.enzymes(),
+            references: this.h.references(),
+            cross_refs: this.h.externalLinks(),
           })
         })
     })
@@ -44,7 +66,7 @@ kegg = {
     externalLinks() {
       var h = 'Other DBs'
       var refs = {}
-      this.rowElements(h).map((r,i) => {
+      this.rowSelectAll(h).map((r,i) => {
         var v = this.rowValue(r, 1).split(/[, ]/)[0]
         var l = this.db_links[v]
         if (l) refs[l] = this.rowLink(r).url
@@ -69,7 +91,7 @@ kegg = {
     },
 
     genes(h) {
-      return this.rowElements(h).map(el => {
+      return this.rowSelectAll(h).map(el => {
         var link = this.link(el.querySelector('a'))
         return {
           organism: this.text(el).capture(/(.+):\s/),
@@ -91,6 +113,24 @@ kegg = {
       })
     },
 
+    reactions() {
+      return this.headerLinks('Reaction').map(l => {
+        return {
+          identifier: l.text,
+          url:        l.url,
+        }
+      })
+    },
+
+    enzymes() {
+      return this.headerLinks('Enzyme').map(l => {
+        return {
+          identifier: l.text,
+          url:        l.url,
+        }
+      })
+    },
+
     reaction() {
       var h    = 'Reaction(IUBMB)'
       var link = this.headerLink(h)
@@ -99,6 +139,11 @@ kegg = {
         kegg_id:        link.text,
         kegg_url:       link.url,
       }
+    },
+
+    headerLinks(h) {
+      var links = this.rowSelectAll(h, {selector: 'td a'})
+      return links.map(l => this.link(l))
     },
 
     headerLink(h, i = 1) {
@@ -123,19 +168,18 @@ kegg = {
     },
 
     hValue(h, {selector = 'td'} = {}) {
-      var row = this.row(h)
-      if (!row) return ''
-      return this.text(row.querySelector(selector))
+      return this.text(this.rowSelect(h, {selector: selector}))
     },
 
-    rowElements(h, {selector = 'td table'} = {}) {
+    rowSelect(h, {selector = 'td'} = {}) {
+      var row = this.row(h)
+      if (!row) return 
+      return row.querySelector(selector)
+    },
+    rowSelectAll(h, {selector = 'td table'} = {}) {
       var row = this.row(h)
       if (!row) return []
       return row.querySelectorAll(selector)
-    },
-
-    text(el) {
-      return el.innerText.trim()
     },
 
     rows(h) {
@@ -148,6 +192,11 @@ kegg = {
 
     row(h) {
       return kegg.table.querySelector(`tr:contains('${h}')`)
+    },
+
+    text(el) {
+      if (!el) return ''
+      return el.innerText.trim()
     },
 
   },
