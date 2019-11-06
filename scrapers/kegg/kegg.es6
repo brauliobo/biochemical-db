@@ -52,12 +52,34 @@ kegg = {
     })
   },
 
+  reaction(id) {
+    var url = `${this.baseUrl}/dbget-bin/www_bget?rn:${id}`
+    return new Promise(resolve => {
+      osmosis.get(url)
+        .find('form table table')
+        .then(table => {
+          if (table.index > 0) return
+          this.table = table
+          resolve({
+            identifier: this.h.hValue('Entry').capture(/(R\d+)/),
+            name:       this.h.hValue('Name'),
+            definition: this.h.hValue('Definition'),
+            equation:   this.h.equation(),
+            enzymes:    this.h.enzymes(),
+            references: this.h.references(),
+            cross_refs: this.h.externalLinks(),
+          })
+        })
+    })
+  },
+
   h: {
     db_links: {
       ExplorEnz: 'explorenz_url',
       IUBMB:     'iubmb_url',
       ExPASy:    'expasy_url',
       BRENDA:    'brenda_url',
+      RHEA:      'rhea_url',
     },
     db_ids: {
 
@@ -67,7 +89,7 @@ kegg = {
       var h = 'Other DBs'
       var refs = {}
       this.rowSelectAll(h).map((r,i) => {
-        var v = this.rowValue(r, 1).split(/[, ]/)[0]
+        var v = this.rowValue(r, 1).split(/[, :]/)[0]
         var l = this.db_links[v]
         if (l) refs[l] = this.rowLink(r).url
       })
@@ -111,6 +133,23 @@ kegg = {
           kegg_url: link.url,
         }
       })
+    },
+
+    equation() {
+      var container = this.rowSelect('Equation', {selector: 'td div'}).childNodes
+      var e = {reactants: [], products: []}
+      var firstPart = true, coefficient = 1
+      _.each(container, c => {
+        if (c.innerText.trim() == '<=>') { firstPart = false; return }
+        if (c.nodeName == 'text') coefficient = parseInt(c.innerText.capture(/\+\s(\d+)?/) || 1)
+        if (c.nodeName != 'a') return
+
+        var l = this.link(c)
+        c = {coefficient: coefficient, identifier: l.text, url: l.url}
+        if ( firstPart) return e.reactants.push(c)
+        if (!firstPart) return e.products.push(c)
+      })
+      return e
     },
 
     reactions() {
