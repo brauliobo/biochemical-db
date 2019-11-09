@@ -12,10 +12,13 @@ expasy = {
           .then(pre => {
             resolve({
               identifier: pre.text().match(/ID\s+(.+)\n?/)[1],
+              url:        url,
               names:      pre.text().match(/DE\s+([^.]+)\.?\n?/)[1],
               reaction:   pre.text().scan( /CA\s+(.+)\n/g).join(' '),
               cofactor:   pre.text().match(/CF\s+([^.]+)\.?\n?/)[1],
-              uniprot_id: pre.text().match(/DR\s+.*\s(Q\d+),[^_]+_HUMAN;\n?/)[1],
+              cross_refs: {
+                uniprot_id: pre.text().match(/DR\s+.*\s(Q\d+),[^_]+_HUMAN;\n?/)[1],
+              },
             })
           })
       })

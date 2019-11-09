@@ -6,69 +6,70 @@ kegg = {
   table:   null,
 
   enzyme(id) {
-    var url = `${this.baseUrl}/dbget-bin/www_bget?ec:${id}`
     return new Promise(resolve => {
-      osmosis.get(url)
-        .find('form table table')
-        .then(table => {
-          if (table.index > 0) return
-          this.table = table
-          resolve({
-            identifier: this.h.hValue('Entry').capture(/([\d\.]+)/),
-            names:      this.h.hValue('Name').split('\n').map(v => v.replace(/;$/,'')),
-            sysname:    this.h.hValue('Sysname'),
-            classes:    this.h.hValue('Class').split('\n').map(v => v.replace(/;$/,'')),
-            reaction:   this.h.reaction(),
-            substrates: this.h.compounds('Substrate'),
-            products:   this.h.compounds('Product'),
-            references: this.h.references(),
-            cross_refs: this.h.externalLinks(),
-            genes:      this.h.genes('Genes'),
-          })
+      this.fetch('ec', id).then((url, table) => {
+        resolve({
+          identifier: this.h.hValue('Entry').capture(/([\d\.]+)/),
+          url:        url,
+          names:      this.h.hValue('Name').split('\n').map(v => v.replace(/;$/,'')),
+          sysname:    this.h.hValue('Sysname'),
+          classes:    this.h.hValue('Class').split('\n').map(v => v.replace(/;$/,'')),
+          reaction:   this.h.reaction(),
+          substrates: this.h.compounds('Substrate'),
+          products:   this.h.compounds('Product'),
+          references: this.h.references(),
+          cross_refs: this.h.externalLinks(),
+          genes:      this.h.genes('Genes'),
         })
+      })
     })
   },
 
   compound(id) {
-    var url = `${this.baseUrl}/dbget-bin/www_bget?cpd:${id}`
     return new Promise(resolve => {
-      osmosis.get(url)
-        .find('form table table')
-        .then(table => {
-          if (table.index > 0) return
-          this.table = table
-          resolve({
-            identifier: this.h.hValue('Entry').capture(/(C\d+)/),
-            names:      this.h.hValue('Name').split('\n').map(v => v.replace(/;$/,'')),
-            formula:    this.h.hValue('Formula'),
-            exact_mass: this.h.hValue('Exact mass'),
-            mol_weight: this.h.hValue('Mol weight'),
-            reactions:  this.h.reactions(),
-            enzymes:    this.h.enzymes(),
-            references: this.h.references(),
-            cross_refs: this.h.externalLinks(),
-          })
+      this.fetch('cpd', id).then((url, table) => {
+        resolve({
+          identifier: this.h.hValue('Entry').capture(/(C\d+)/),
+          url:        url,
+          names:      this.h.hValue('Name').split('\n').map(v => v.replace(/;$/,'')),
+          formula:    this.h.hValue('Formula'),
+          exact_mass: this.h.hValue('Exact mass'),
+          mol_weight: this.h.hValue('Mol weight'),
+          reactions:  this.h.reactions(),
+          enzymes:    this.h.enzymes(),
+          references: this.h.references(),
+          cross_refs: this.h.externalLinks(),
         })
+      })
     })
   },
 
   reaction(id) {
-    var url = `${this.baseUrl}/dbget-bin/www_bget?rn:${id}`
+    return new Promise(resolve => {
+      this.fetch('rn', id).then((url, table) => {
+        resolve({
+          identifier: this.h.hValue('Entry').capture(/(R\d+)/),
+          url:        url,
+          name:       this.h.hValue('Name'),
+          definition: this.h.hValue('Definition'),
+          equation:   this.h.equation(),
+          enzymes:    this.h.enzymes(),
+          references: this.h.references(),
+          cross_refs: this.h.externalLinks(),
+        })
+      })
+    })
+  },
+
+  fetch(prefix, id) {
+    var url = `${this.baseUrl}/dbget-bin/www_bget?${prefix}:${id}`
     return new Promise(resolve => {
       osmosis.get(url)
         .find('form table table')
         .then(table => {
           if (table.index > 0) return
           this.table = table
-          resolve({
-            identifier: this.h.hValue('Entry').capture(/(R\d+)/),
-            name:       this.h.hValue('Name'),
-            definition: this.h.hValue('Definition'),
-            equation:   this.h.equation(),
-            enzymes:    this.h.enzymes(),
-            references: this.h.references(),
-            cross_refs: this.h.externalLinks(),
-          })
+          resolve(url, table)
         })
     })
   },
