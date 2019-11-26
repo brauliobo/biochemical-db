@@ -1,8 +1,14 @@
 require('../lib/string.es6')
-callerId = require('caller-id')
-_ = require('lodash')
+require('../lib/xml2json.es6')
+require('../lib/puts.es6')
+
+fetch    = require('node-fetch')
+xmldom   = require('xmldom')
+_        = require('lodash')
+
 require('./expasy/expasy.es6')
 require('./kegg/kegg.es6')
+require('./uniprot/uniprot.es6')
 
 var params = process.argv.slice(2).reduce((h, val, index) => {
   var p    = val.split('=')
@@ -10,7 +16,5 @@ var params = process.argv.slice(2).reduce((h, val, index) => {
   return h
 }, {})
 
-global[params.source][params.type](params.id).then((o) => {
-  console.dir(o, {colors: true, depth: null, maxArrayLength: null})
-})
+global[params.source][params.type](params.id).then(puts)
 

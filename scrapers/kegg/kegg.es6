@@ -64,13 +64,11 @@ kegg = {
   fetch(prefix, id) {
     var url = `${this.baseUrl}/dbget-bin/www_bget?${prefix}:${id}`
     return new Promise(resolve => {
-      osmosis.get(url)
-        .find('form table table')
-        .then(table => {
-          if (table.index > 0) return
+      osmosis.get(url).find('form table table').then(table => {
+        if (table.index > 0) return
           this.table = table
-          resolve(url, table)
-        })
+        resolve(url, table)
+      })
     })
   },
 
