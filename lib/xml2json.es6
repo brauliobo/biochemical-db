@@ -2,7 +2,7 @@ const xmldom = require('xmldom')
 
 xml2json = xml => {
   var el = xml.nodeType === 9 ? xml.documentElement : xml
-  var h  = {name: el.nodeName}
+  var h  = {_name: el.nodeName}
   h.content    = Array.from(el.childNodes || []).filter(e => e.nodeType === 3).map(e => e.textContent).join('').trim()
   h.attributes = Array.from(el.attributes || []).filter(a => a).reduce((h, a) => { h[a.name] = a.value; return h }, {})
   h.children   = Array.from(el.childNodes || []).filter(e => e.nodeType === 1).map(c => {

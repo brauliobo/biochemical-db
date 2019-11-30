@@ -10,6 +10,7 @@ kegg = {
       this.fetch('ec', id).then((url, table) => {
         resolve({
           identifier: this.h.hValue('Entry').capture(/([\d\.]+)/),
+          number:     this.h.hValue('Entry').capture(/([\d\.]+)/),
           url:        url,
           names:      this.h.hValue('Name').split('\n').map(v => v.replace(/;$/,'')),
           sysname:    this.h.hValue('Sysname'),
