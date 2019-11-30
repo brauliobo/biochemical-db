@@ -7,6 +7,8 @@ xmldom    = require('xmldom')
 _         = require('lodash')
 ftp       = require('basic-ftp')
 fs        = require('fs')
+csvParser = require('csv-parser')
+events    = require('events')
 
 require('./expasy/expasy.es6')
 require('./kegg/kegg.es6')
