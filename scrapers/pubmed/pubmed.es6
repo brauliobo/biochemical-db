@@ -5,19 +5,20 @@ const csvParser = require('csv-parser')
 const tar       = require('tar-stream')
 const zlib      = require('zlib')
 const AsyncLib  = require('async')
+const pool      = require('generic-pool')
 
 pubmed = {
 
   async database() {
     return new Promise(async (resolve) => {
-      await this.ftp.init()
+      this.ftp.init()
       await this.ftp.downloadCsv()
       this.ftp.readCsv()
     })
   },
 
   ftp: {
-    client: null,
+    pool:   null,
     config: {
       host: `ftp.ncbi.nlm.nih.gov`,
     },
@@ -25,10 +26,18 @@ pubmed = {
     csvFile:  `oa_file_list.csv`,
     cacheDir: `cache/pubmed`,
 
-    async init() {
-      this.client = new ftp.Client()
-      this.client.ftp.verbose = true
-      await this.client.access(this.config)
+    async newClient() {
+      const client = new ftp.Client()
+      client.ftp.verbose = true
+      await client.access(this.config)
+      return client
+    },
+
+    init() {
+      this.pool = pool.createPool({
+        create:  () => this.newClient(),
+        destroy: () => {},
+      }, {min: 1, max: args.pool_size || 5})
     },
 
     async downloadCsv() {
@@ -36,31 +45,25 @@ pubmed = {
     },
 
     async download(localPath, remotePath) {
-      const lastMod   = await this.client.lastMod(remotePath)
-      const localStat = fs.existsSync(localPath) && fs.statSync(localPath)
-      if (localStat == false || lastMod > localStat.mtime)
-        await this.client.downloadTo(localPath, remotePath)
+      await this.pool.acquire().then(async (client) => {
+        const lastMod   = fs.existsSync(localPath) && await client.lastMod(remotePath)
+        const localStat = lastMod && fs.statSync(localPath)
+        if (localStat == false || lastMod > localStat.mtime)
+          await client.downloadTo(localPath, remotePath)
+        this.pool.release(client)
+      })
     },
 
     readCsv() {
-      fs.createReadStream(`${pubmed.ftp.cacheDir}/${pubmed.ftp.csvFile}`)
+      fs.createReadStream(`${this.cacheDir}/${this.csvFile}`)
         .pipe(csvParser())
-        .on('data', row => {
-          pubmed.article.cacheQueue.push(row)
-        })
+        .on('data', row => { pubmed.article.cache(row) })
     },
   },
 
   article: {
 
-    cacheQueue: AsyncLib.queue(async (row, cb) => {
-      await pubmed.article.cache(row).then(nxml => {
-        pubmed.article.read(nxml)
-      })
-      return cb()
-    }, 1),
-
-    read(nxml) {
+    parse(nxml) {
     },
 
     async cache(row) {
@@ -92,8 +95,8 @@ pubmed = {
           stream.on('data', chunk => {
             if (header.name.endsWith('.nxml')) nxml += chunk
           })
-        stream.on('end', cb)
-        stream.resume()
+          stream.on('end', cb)
+          stream.resume()
         })
       } catch {
         return puts(`Ignoring ${file}`)
