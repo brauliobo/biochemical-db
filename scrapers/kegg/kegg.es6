@@ -1,9 +1,60 @@
-const osmosis = require('osmosis')
+const query    = require('querystring')
+const osmosis  = require('osmosis')
 
 kegg = {
 
   baseUrl: `https://www.genome.jp`,
   table:   null,
+
+  typeMap: {
+    H: 'disease',
+    C: 'compound',
+    R: 'reaction',
+  },
+
+  databases: {
+
+    baseUrl: `https://www.genome.jp/kegg-bin/download_htext`,
+
+    download(id) {
+      var params = {
+        htext:  `${id}.keg`,
+        format: 'json',
+      }
+      var url = `${this.baseUrl}?${query.stringify(params)}`
+      return new Promise(resolve => {
+        fetch(url).then(response => response.json()).then(json => resolve(json))
+      })
+    },
+
+  },
+
+  index: {
+    parse(index) {
+      cache.setupDir(`kegg`)
+      this.parseOne(index)
+    },
+    
+    parseOne(index) {
+      if (index.children) return index.children.flatMap(c => this.parseOne(c)).filter(c => c)
+      var captures = index.name.match(/([HCR]\d+)\s+([^\[]+)\s*(\[)?/)
+      if (!captures) return puts(`Ignoring ${index.name}`)
+      return {
+        id:   captures[1],
+        name: captures[2].trim(),
+      }
+    },
+
+    cache(id) {
+
+    },
+  },
+
+  database(id) {
+    return new Promise(resolve => {
+      this.databases.download(id).then((i) => resolve(this.index.parseOne(i)))
+    })
+  },
 
   enzyme(id) {
     return new Promise(resolve => {

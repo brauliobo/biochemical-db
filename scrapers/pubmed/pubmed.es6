@@ -5,7 +5,6 @@ const csvParser = require('csv-parser')
 const tar       = require('tar-stream')
 const zlib      = require('zlib')
 const query     = require('querystring')
-const async     = require('async')
 
 pubmed = {
 
@@ -13,19 +12,34 @@ pubmed = {
     return new Promise(async (resolve) => {
       await this.ftp.init()
       await this.ftp.downloadCsv()
-      await this.article.readCsv()
+      await this.articles.readCsv()
     })
   },
 
-  article: {
+  article(file) {
+    var xml = fs.readFileSync(file, 'utf8')
+    xml  = new xmldom.DOMParser().parseFromString(xml, 'text/xml')
+    json = xml2json(xml, {ignoreTags: ['body']})
+    debugger
+    return Promise.resolve()
+  },
+
+  articles: {
 
     queue:      0,
-    queueLimit: 200,
+    queueLimit: 50,
 
     baseUrl: 'https://www.ncbi.nlm.nih.gov/pmc/oai/oai.cgi',
 
-    parse(xml) {
-      //nxml = new xmldom.DOMParser().parseFromString(nxml, 'text/xml')
+    async readCsv() {
+      var stream = fs.createReadStream(`${pubmed.ftp.cacheDir}/${pubmed.ftp.csvFile}`)
+        .pipe(csvParser())
+        .on('data', async (row) => {
+          if (this.queue++ > this.queueLimit) stream.pause()
+          puts(`Caching ${row['Accession ID']}`)
+          await pubmed.articles.cacheFromOai(row).then(pubmed.articles.parse)
+          if (this.queue-- < this.queueLimit) stream.resume()
+        })
     },
 
     async cacheFromOai(row) {
@@ -33,7 +47,7 @@ pubmed = {
       var dir    = `${pubmed.ftp.cacheDir}/articles`
       var file   = `${dir}/${id}.nxml`
       if (fs.existsSync(file))
-        return Promise.resolve(fs.readFileSync(file))
+        return file
 
       var params = {
         verb:           'GetRecord',
@@ -52,7 +66,7 @@ pubmed = {
       var dir  = `${pubmed.ftp.cacheDir}/articles`
       var file = `${dir}/${id}.nxml`
       if (fs.existsSync(file))
-        return Promise.resolve(fs.readFileSync(file))
+        return file
 
       var tmp  = `/tmp/${path.basename(row.File)}`
       await pubmed.ftp.download(tmp, `/pub/pmc/${row.File}`)
@@ -84,17 +98,6 @@ pubmed = {
           resolve(nxml)
         })
       })
-    },
-
-    async readCsv() {
-      var stream = fs.createReadStream(`${pubmed.ftp.cacheDir}/${pubmed.ftp.csvFile}`)
-        .pipe(csvParser())
-        .on('data', async (row) => {
-          if (this.queue++ > this.queueLimit) stream.pause()
-          puts(`Caching ${row['Accession ID']}`)
-          await pubmed.article.cacheFromOai(row).then(pubmed.article.parse)
-          if (this.queue-- < this.queueLimit) stream.resume()
-        })
     },
 
   },
