@@ -1,10 +1,11 @@
 fetch        = require('node-fetch')
 const fs     = require('fs')
 const crypto = require('crypto')
+const dir    = cache.setupDir('fetch')
 
 fetchCached = (url, {file} = {}) => {
   file      = file || crypto.createHash('md5').update(url).digest("hex")
-  var path  = `${cache.setupDir('fetch')}/${file}`
+  var path  = `${dir}/${file}`
 
   if (fs.existsSync(path))
     return Promise.resolve(fs.readFileSync(path, 'utf8'))
