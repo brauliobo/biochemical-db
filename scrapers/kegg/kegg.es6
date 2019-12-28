@@ -26,33 +26,46 @@ kegg = {
         fetch(url).then(response => response.json()).then(json => resolve(json))
       })
     },
-
   },
 
   index: {
     parse(index) {
       cache.setupDir(`kegg`)
-      this.parseOne(index)
+      return this.parseOne(index)
     },
     
     parseOne(index) {
       if (index.children) return index.children.flatMap(c => this.parseOne(c)).filter(c => c)
-      var captures = index.name.match(/([HCR]\d+)\s+([^\[]+)\s*(\[)?/)
+
+      var captures = index.name.match(/([HCR]\d+)\s+([^\[]+)\s(\[)?/)
       if (!captures) return puts(`Ignoring ${index.name}`)
       return {
         id:   captures[1],
         name: captures[2].trim(),
       }
     },
-
-    cache(id) {
-
-    },
   },
 
   database(id) {
     return new Promise(resolve => {
-      this.databases.download(id).then((i) => resolve(this.index.parseOne(i)))
+      this.databases.download(id).then((i) => resolve(this.index.parse(i)))
+    })
+  },
+
+  disease(id) {
+    return new Promise(resolve => {
+      this.fetch('ds', id).then((url, table) => {
+        resolve({
+          identifier:  this.h.hValue('Entry').capture(/(H\d+)/),
+          url:         url,
+          description: this.h.hValue('Description'),
+          category:    this.h.hValue('Category'),
+          genes:       this.h.linkedGenes('Gene'),
+          env_factors: this.h.hValue('Env factor').split('\n'),
+          drugs:       this.h.drugs('Drug'),
+          references:  this.h.references(),
+        })
+      })
     })
   },
 
@@ -154,11 +167,23 @@ kegg = {
         var journal = this.rowValue(this.subrow('Title', 'Journal', i+1))
         return {
           number:  v.capture(/(\d+)\s/),
-          pmid:    v.capture(/\[PMID:(\d+)\]/),
+          pmid:    v.capture(/PMID:(\d+)/),
           doi_id:  journal.capture(/DOI:([\d\.\/()\-]+)/),
-          authors: this.rowValue(this.subrow(h, 'Authors', i+1)).split(','),
+          authors: this.rowValue(this.subrow(h, 'Authors', i+1)).split(', '),
           title:   this.rowValue(this.subrow('Authors', 'Title', i+1)),
           journal: journal,
+        }
+      })
+    },
+
+    linkedGenes(h) {
+      return this.hValue(h).split('\n').map((g, i) => {
+        var captures = g.match(/([^ ]+) \(([^\)]+)\) \[HSA:(\d+)\]/)
+        return {
+          identifier: captures[1],
+          variation:  captures[2],
+          kegg_id:    captures[3],
+          kegg_url:   this.linkFor('hsa', captures[3]),
         }
       })
     },
@@ -168,6 +193,17 @@ kegg = {
         var link = this.link(el.querySelector('a'))
         return {
           organism: this.text(el).capture(/(.+):\s/),
+          kegg_id:  link.text,
+          kegg_url: link.url,
+        }
+      })
+    },
+
+    drugs(h) {
+      return this.hValue(h).split('\n').map((c, i) => {
+        var link = this.headerLink(h, i+1)
+        return {
+          name:     c.capture(/(.+) \[DR/),
           kegg_id:  link.text,
           kegg_url: link.url,
         }
@@ -251,6 +287,10 @@ kegg = {
         text: el.innerText,
         url:  url,
       }
+    },
+
+    linkFor(prefix, id) {
+      return `${kegg.baseUrl}/dbget-bin/www_bget?${prefix}:${id}`
     },
 
     rowValue(row, i = 1, {selector = `td:nth-of-type(${i})`} = {}) {
