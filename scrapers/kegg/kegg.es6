@@ -4,7 +4,6 @@ const libxml = require('libxmljs-dom')
 kegg = {
 
   baseUrl: `https://www.genome.jp`,
-  table:   null,
 
   typeMap: {
     compound: {
@@ -75,16 +74,21 @@ kegg = {
     parseOne(index) {
       if (index.children) return index.children.flatMap(c => this.parseOne(c)).filter(c => c)
 
-      var captures = index.name.match(/([HCR]\d+|\d+\.[\d\-]+\.[\d\-]+(?:\.[\d\-]+)?)\s*([^\[]+)?\s?(\[)?/)
-      //if (!captures) debugger
-      if (!captures) return puts(`Ignoring ${index.name}`)
+      var [_i,id,name] = index.name.match(/([HCR]\d+|\d+\.[\d\-]+\.[\d\-]+(?:\.[\d\-]+)?)\s*([^\[]+)?\s?(\[)?/)
+      //if (!id) debugger
+      if (!id) return puts(`Ignoring ${index.name}`)
 
-      var type = _.find(kegg.typeMap, t => t.prefix == captures[1][0]) || kegg.typeMap.enzyme
+      var type = _.find(kegg.typeMap, t => t.prefix == id[0]) || kegg.typeMap.enzyme
+      this.cache(type, id)
       return {
-        id:   captures[1],
+        id:   id,
         type: type.name,
-        name: (captures[2] || '').trim(),
+        name: (name || '').trim(),
       }
+    },
+
+    cache(type, id) {
+      kegg[type.name](id)
     },
   },
 
@@ -98,16 +102,16 @@ kegg = {
 
   disease(id) {
     return new Promise(resolve => {
-      this.fetch(this.typeMap.disease.id, id).then((url, table) => {
+      this.fetch(this.typeMap.disease.id, id).then(page => {
         resolve({
-          identifier:  this.h.hValue('Entry').capture(/(H\d+)/),
-          url:         url,
-          description: this.h.hValue('Description'),
-          category:    this.h.hValue('Category'),
-          genes:       this.h.linkedGenes('Gene'),
-          env_factors: this.h.hValue('Env factor').split('\n'),
-          drugs:       this.h.drugs('Drug'),
-          references:  this.h.references(),
+          identifier:  page.hValue('Entry').capture(/(H\d+)/),
+          url:         page.url,
+          description: page.hValue('Description'),
+          category:    page.hValue('Category'),
+          genes:       page.linkedGenes('Gene'),
+          env_factors: page.hValue('Env factor').split('\n'),
+          drugs:       page.drugs('Drug'),
+          references:  page.references(),
         })
       })
     })
@@ -115,20 +119,20 @@ kegg = {
 
   enzyme(id) {
     return new Promise(resolve => {
-      this.fetch(this.typeMap.enzyme.id, id).then((url, table) => {
+      this.fetch(this.typeMap.enzyme.id, id).then(page => {
         resolve({
-          identifier: this.h.hValue('Entry').capture(/([\d\.]+)/),
-          number:     this.h.hValue('Entry').capture(/([\d\.]+)/),
-          url:        url,
-          names:      this.h.hValue('Name').split('\n').map(v => v.replace(/;$/,'')),
-          sysname:    this.h.hValue('Sysname'),
-          classes:    this.h.hValue('Class').split('\n').map(v => v.replace(/;$/,'')),
-          reaction:   this.h.reaction(),
-          substrates: this.h.compounds('Substrate'),
-          products:   this.h.compounds('Product'),
-          references: this.h.references(),
-          cross_refs: this.h.externalLinks(),
-          genes:      this.h.genes('Genes'),
+          identifier: page.hValue('Entry').capture(/([\d\.]+)/),
+          number:     page.hValue('Entry').capture(/([\d\.]+)/),
+          url:        page.url,
+          names:      page.hValue('Name').split('\n').map(v => v.replace(/;$/,'')),
+          sysname:    page.hValue('Sysname'),
+          classes:    page.hValue('Class').split('\n').map(v => v.replace(/;$/,'')),
+          reaction:   page.reaction(),
+          substrates: page.compounds('Substrate'),
+          products:   page.compounds('Product'),
+          references: page.references(),
+          cross_refs: page.externalLinks(),
+          genes:      page.genes('Genes'),
         })
       })
     })
@@ -136,18 +140,18 @@ kegg = {
 
   compound(id) {
     return new Promise(resolve => {
-      this.fetch(this.typeMap.compound.id, id).then((url, table) => {
+      this.fetch(this.typeMap.compound.id, id).then(page => {
         resolve({
-          identifier: this.h.hValue('Entry').capture(/(C\d+)/),
-          url:        url,
-          names:      this.h.hValue('Name').split('\n').map(v => v.replace(/;$/,'')),
-          formula:    this.h.hValue('Formula'),
-          exact_mass: this.h.hValue('Exact mass'),
-          mol_weight: this.h.hValue('Mol weight'),
-          reactions:  this.h.reactions(),
-          enzymes:    this.h.enzymes(),
-          references: this.h.references(),
-          cross_refs: this.h.externalLinks(),
+          identifier: page.hValue('Entry').capture(/(C\d+)/),
+          url:        page.url,
+          names:      page.hValue('Name').split('\n').map(v => v.replace(/;$/,'')),
+          formula:    page.hValue('Formula'),
+          exact_mass: page.hValue('Exact mass'),
+          mol_weight: page.hValue('Mol weight'),
+          reactions:  page.reactions(),
+          enzymes:    page.enzymes(),
+          references: page.references(),
+          cross_refs: page.externalLinks(),
         })
       })
     })
@@ -155,16 +159,16 @@ kegg = {
 
   reaction(id) {
     return new Promise(resolve => {
-      this.fetch(this.typeMap.reaction.id, id).then((url, table) => {
+      this.fetch(this.typeMap.reaction.id, id).then(page => {
         resolve({
-          identifier: this.h.hValue('Entry').capture(/(R\d+)/),
-          url:        url,
-          name:       this.h.hValue('Name'),
-          definition: this.h.hValue('Definition'),
-          equation:   this.h.equation(),
-          enzymes:    this.h.enzymes(),
-          references: this.h.references(),
-          cross_refs: this.h.externalLinks(),
+          identifier: page.hValue('Entry').capture(/(R\d+)/),
+          url:        page.url,
+          name:       page.hValue('Name'),
+          definition: page.hValue('Definition'),
+          equation:   page.equation(),
+          enzymes:    page.enzymes(),
+          references: page.references(),
+          cross_refs: page.externalLinks(),
         })
       })
     })
@@ -174,25 +178,27 @@ kegg = {
     var url = `${this.baseUrl}/dbget-bin/www_bget?${prefix}:${id}`
     return new Promise(resolve => {
       fetchCached(url, {file: id}).then(page => {
-        var doc    = libxml.parseHtml(page, {baseUrl: url})
-        this.table = doc.querySelector('form table table')
-        resolve(url, this.table)
+        var doc = libxml.parseHtml(page, {baseUrl: url})
+        resolve(new this.page(doc, url))
       })
     })
   },
 
-  h: {
-    db_links: {
+  page: class Page {
+    db_links = {
       ExplorEnz: 'explorenz_url',
       IUBMB:     'iubmb_url',
       ExPASy:    'expasy_url',
       BRENDA:    'brenda_url',
       RHEA:      'rhea_url',
-    },
-    db_ids: {
-
-    },
+    }
     
+    constructor(doc, url) {
+      this.doc   = doc
+      this.url   = url
+      this.table = doc.querySelector('form table table')
+    }
+
     externalLinks() {
       var h = 'Other DBs'
       var refs = {}
@@ -202,7 +208,7 @@ kegg = {
         if (l) refs[l] = this.rowLink(r).url
       })
       return refs
-    },
+    }
 
     references() {
       var h = 'Reference'
@@ -218,7 +224,7 @@ kegg = {
           journal: journal,
         }
       })
-    },
+    }
 
     linkedGenes(h) {
       return this.hValue(h).split('\n').map((g, i) => {
@@ -230,7 +236,7 @@ kegg = {
           kegg_url:   this.linkFor(kegg.typeMap.human_gene, captures[3]),
         }
       })
-    },
+    }
 
     genes(h) {
       return this.rowSelectAll(h).map(el => {
@@ -241,7 +247,7 @@ kegg = {
           kegg_url: link.url,
         }
       })
-    },
+    }
 
     drugs(h) {
       return this.hValue(h).split('\n').map((c, i) => {
@@ -252,7 +258,7 @@ kegg = {
           kegg_url: link.url,
         }
       })
-    },
+    }
 
     compounds(h) {
       return this.hValue(h).split('\n').map((c, i) => {
@@ -264,7 +270,7 @@ kegg = {
           kegg_url: link.url,
         }
       })
-    },
+    }
 
     equation() {
       var container = this.rowSelect('Equation', {selector: 'td div'}).childNodes
@@ -281,7 +287,7 @@ kegg = {
         if (!firstPart) return e.products.push(c)
       })
       return e
-    },
+    }
 
     reactions() {
       return this.headerLinks('Reaction').map(l => {
@@ -290,7 +296,7 @@ kegg = {
           url:        l.url,
         }
       })
-    },
+    }
 
     enzymes() {
       return this.headerLinks('Enzyme').map(l => {
@@ -299,7 +305,7 @@ kegg = {
           url:        l.url,
         }
       })
-    },
+    }
 
     reaction() {
       var h    = 'Reaction(IUBMB)'
@@ -309,21 +315,21 @@ kegg = {
         kegg_id:        link.text,
         kegg_url:       link.url,
       }
-    },
+    }
 
     headerLinks(h) {
       var links = this.rowSelectAll(h, {selector: 'td a'})
       return links.map(l => this.link(l))
-    },
+    }
 
     headerLink(h, i = 1) {
       return this.rowLink(this.row(h), i)
-    },
+    }
 
     rowLink(row, i = 1) {
       var link = row.querySelector(`a:nth-of-type(${i})`)
       return this.link(link)
-    },
+    }
 
     link(el) {
       var url = el.href.startsWith('/') ? `${kegg.baseUrl}${el.href}` : el.href
@@ -331,47 +337,47 @@ kegg = {
         text: el.innerText,
         url:  url,
       }
-    },
+    }
 
     linkFor(type, id) {
       return `${kegg.baseUrl}/dbget-bin/www_bget?${type.id}:${id}`
-    },
+    }
 
     rowValue(row, i = 1, {selector = `td:nth-of-type(${i})`} = {}) {
       return this.text(row.querySelector(selector))
-    },
+    }
 
     hValue(h, {selector = 'td'} = {}) {
       return this.text(this.rowSelect(h, {selector: selector}))
-    },
+    }
 
     rowSelect(h, {selector = 'td'} = {}) {
       var row = this.row(h)
       if (!row) return 
       return row.querySelector(selector)
-    },
+    }
     rowSelectAll(h, {selector = 'td table'} = {}) {
       var row = this.row(h)
       if (!row) return []
       return row.querySelectorAll(selector)
-    },
+    }
 
     rows(h) {
-      return kegg.table.querySelectorAll(`tr:contains('${h}')`)
-    },
+      return this.table.querySelectorAll(`tr:contains('${h}')`)
+    }
 
     subrow(h, sh, i = 1) {
-      return kegg.table.querySelector(`tr:contains('${h}'):nth-of-type(${i}) + tr:contains('${sh}')`)
-    },
+      return this.table.querySelector(`tr:contains('${h}'):nth-of-type(${i}) + tr:contains('${sh}')`)
+    }
 
     row(h) {
-      return kegg.table.querySelector(`tr:contains('${h}')`)
-    },
+      return this.table.querySelector(`tr:contains('${h}')`)
+    }
 
     text(el) {
       if (!el) return ''
       return el.innerText.trim()
-    },
+    }
 
   },
 
