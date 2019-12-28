@@ -7,12 +7,49 @@ kegg = {
   table:   null,
 
   typeMap: {
-    H: 'disease',
-    C: 'compound',
-    R: 'reaction',
+    disease: {
+      name:   'disease',
+      id:     'ds',
+      prefix: 'H',
+    },
+    compound: {
+      name:   'compound',
+      id:     'cpd',
+      prefix: 'C',
+    },
+    reaction: {
+      id:     'rn',
+      name:   'reaction',
+      prefix: 'R',
+    },
+    enzyme: {
+      id:     'ec',
+      name:   'enzyme',
+      prefix: '',
+    },
+    human_gene: {
+      id:     'hsa',
+      name:   'human_gene',
+      prefix: '',
+    },
   },
 
   databases: {
+
+    list: [
+      // Diseases
+      'br08402', // Human diseases
+      // Compounds
+      'br08009', // Natural Toxins
+      'br08003', // Phytochemical Compounds
+      'br08021', // Glycosides
+      'br08005', // Bioactive Peptides
+      'br08006', // Endocrine Disrupting Compounds
+      'br08007', // Pesticides
+      'br08008', // Carcinogens
+      // Enzymes
+      // Reactions
+    ],
 
     baseUrl: `https://www.genome.jp/kegg-bin/download_htext`,
 
@@ -37,11 +74,11 @@ kegg = {
     parseOne(index) {
       if (index.children) return index.children.flatMap(c => this.parseOne(c)).filter(c => c)
 
-      var captures = index.name.match(/([HCR]\d+)\s+([^\[]+)\s(\[)?/)
+      var captures = index.name.match(/([HCR]\d+|[1-9]+\.[1-9\-]+\.[1-9\-]+\.[1-9\-]+)\s*([^\[]+)?\s?(\[)?/)
       if (!captures) return puts(`Ignoring ${index.name}`)
       return {
         id:   captures[1],
-        name: captures[2].trim(),
+        name: (captures[2] || '').trim(),
       }
     },
   },
@@ -54,7 +91,7 @@ kegg = {
 
   disease(id) {
     return new Promise(resolve => {
-      this.fetch('ds', id).then((url, table) => {
+      this.fetch(this.typeMap.disease.id, id).then((url, table) => {
         resolve({
           identifier:  this.h.hValue('Entry').capture(/(H\d+)/),
           url:         url,
@@ -71,7 +108,7 @@ kegg = {
 
   enzyme(id) {
     return new Promise(resolve => {
-      this.fetch('ec', id).then((url, table) => {
+      this.fetch(this.typeMap.enzyme.id, id).then((url, table) => {
         resolve({
           identifier: this.h.hValue('Entry').capture(/([\d\.]+)/),
           number:     this.h.hValue('Entry').capture(/([\d\.]+)/),
@@ -92,7 +129,7 @@ kegg = {
 
   compound(id) {
     return new Promise(resolve => {
-      this.fetch('cpd', id).then((url, table) => {
+      this.fetch(this.typeMap.compound.id, id).then((url, table) => {
         resolve({
           identifier: this.h.hValue('Entry').capture(/(C\d+)/),
           url:        url,
@@ -111,7 +148,7 @@ kegg = {
 
   reaction(id) {
     return new Promise(resolve => {
-      this.fetch('rn', id).then((url, table) => {
+      this.fetch(this.typeMap.reaction.id, id).then((url, table) => {
         resolve({
           identifier: this.h.hValue('Entry').capture(/(R\d+)/),
           url:        url,
@@ -183,7 +220,7 @@ kegg = {
           identifier: captures[1],
           variation:  captures[2],
           kegg_id:    captures[3],
-          kegg_url:   this.linkFor('hsa', captures[3]),
+          kegg_url:   this.linkFor(kegg.typeMap.human_gene, captures[3]),
         }
       })
     },
@@ -289,8 +326,8 @@ kegg = {
       }
     },
 
-    linkFor(prefix, id) {
-      return `${kegg.baseUrl}/dbget-bin/www_bget?${prefix}:${id}`
+    linkFor(type, id) {
+      return `${kegg.baseUrl}/dbget-bin/www_bget?${type.id}:${id}`
     },
 
     rowValue(row, i = 1, {selector = `td:nth-of-type(${i})`} = {}) {
