@@ -1,5 +1,5 @@
-const query    = require('querystring')
-const osmosis  = require('osmosis')
+const query  = require('querystring')
+const libxml = require('libxmljs-dom')
 
 kegg = {
 
@@ -173,10 +173,10 @@ kegg = {
   fetch(prefix, id) {
     var url = `${this.baseUrl}/dbget-bin/www_bget?${prefix}:${id}`
     return new Promise(resolve => {
-      osmosis.get(url).find('form table table').then(table => {
-        if (table.index > 0) return
-          this.table = table
-        resolve(url, table)
+      fetchCached(url, {file: id}).then(page => {
+        var doc    = libxml.parseHtml(page, {baseUrl: url})
+        this.table = doc.querySelector('form table table')
+        resolve(url, this.table)
       })
     })
   },
