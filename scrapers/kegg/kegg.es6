@@ -7,11 +7,6 @@ kegg = {
   table:   null,
 
   typeMap: {
-    disease: {
-      name:   'disease',
-      id:     'ds',
-      prefix: 'H',
-    },
     compound: {
       name:   'compound',
       id:     'cpd',
@@ -27,6 +22,11 @@ kegg = {
       name:   'enzyme',
       prefix: '',
     },
+    disease: {
+      name:   'disease',
+      id:     'ds',
+      prefix: 'H',
+    },
     human_gene: {
       id:     'hsa',
       name:   'human_gene',
@@ -37,8 +37,6 @@ kegg = {
   databases: {
 
     list: [
-      // Diseases
-      'br08402', // Human diseases
       // Compounds
       'br08009', // Natural Toxins
       'br08003', // Phytochemical Compounds
@@ -47,10 +45,12 @@ kegg = {
       'br08006', // Endocrine Disrupting Compounds
       'br08007', // Pesticides
       'br08008', // Carcinogens
-      // Enzymes
       // Reactions
       'br08201', // Enzymatic reactions
       'br08202', // IUBMB Reaction Hierarchy
+      // Diseases
+      'br08402', // Human diseases
+      // Enzymes
     ],
 
     baseUrl: `https://www.genome.jp/kegg-bin/download_htext`,
@@ -89,6 +89,8 @@ kegg = {
   },
 
   database(id) {
+    if (id == 'all') return Promise.all(this.databases.list.map(id => this.database(id)))
+
     return new Promise(resolve => {
       this.databases.download(id).then((i) => resolve(this.index.parse(i)))
     })

@@ -7,7 +7,7 @@ fetchCached = (url, {file} = {}) => {
   var path  = `${cache.setupDir('fetch')}/${file}`
 
   if (fs.existsSync(path))
-    return new Promise(resolve => resolve(fs.readFileSync(path, 'utf8')))
+    return Promise.resolve(fs.readFileSync(path, 'utf8'))
 
   return fetch(url).then(response => {
     return new Promise(resolve => {
