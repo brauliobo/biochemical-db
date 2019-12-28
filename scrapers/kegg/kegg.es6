@@ -49,6 +49,8 @@ kegg = {
       'br08008', // Carcinogens
       // Enzymes
       // Reactions
+      'br08201', // Enzymatic reactions
+      'br08202', // IUBMB Reaction Hierarchy
     ],
 
     baseUrl: `https://www.genome.jp/kegg-bin/download_htext`,
@@ -59,13 +61,12 @@ kegg = {
         format: 'json',
       }
       var url = `${this.baseUrl}?${query.stringify(params)}`
-      return new Promise(resolve => {
-        fetch(url).then(response => response.json()).then(json => resolve(json))
-      })
+      return new Promise(resolve => fetchCached(url, {file: id}).then(json => resolve(JSON.parse(json))))
     },
   },
 
   index: {
+
     parse(index) {
       cache.setupDir(`kegg`)
       return this.parseOne(index)
@@ -74,10 +75,14 @@ kegg = {
     parseOne(index) {
       if (index.children) return index.children.flatMap(c => this.parseOne(c)).filter(c => c)
 
-      var captures = index.name.match(/([HCR]\d+|[1-9]+\.[1-9\-]+\.[1-9\-]+\.[1-9\-]+)\s*([^\[]+)?\s?(\[)?/)
+      var captures = index.name.match(/([HCR]\d+|\d+\.[\d\-]+\.[\d\-]+(?:\.[\d\-]+)?)\s*([^\[]+)?\s?(\[)?/)
+      //if (!captures) debugger
       if (!captures) return puts(`Ignoring ${index.name}`)
+
+      var type = _.find(kegg.typeMap, t => t.prefix == captures[1][0]) || kegg.typeMap.enzyme
       return {
         id:   captures[1],
+        type: type.name,
         name: (captures[2] || '').trim(),
       }
     },

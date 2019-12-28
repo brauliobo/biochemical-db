@@ -3,8 +3,8 @@ require('../lib/xml2json.es6')
 require('../lib/puts.es6')
 require('../lib/args.es6')
 require('../lib/cache.es6')
+require('../lib/fetch.es6')
 
-fetch  = require('node-fetch')
 xmldom = require('xmldom')
 _      = require('lodash')
 
