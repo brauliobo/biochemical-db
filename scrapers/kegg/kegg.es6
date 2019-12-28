@@ -67,16 +67,16 @@ kegg = {
   index: {
 
     parse(index) {
-      cache.setupDir(`kegg`)
       return this.parseOne(index)
     },
     
     parseOne(index) {
       if (index.children) return index.children.flatMap(c => this.parseOne(c)).filter(c => c)
 
-      var [_i,id,name] = index.name.match(/([HCR]\d+|\d+\.[\d\-]+\.[\d\-]+(?:\.[\d\-]+)?)\s*([^\[]+)?\s?(\[)?/)
-      //if (!id) debugger
-      if (!id) return puts(`Ignoring ${index.name}`)
+      var captures = index.name.match(/([HCR]\d+|\d+\.[\d\-]+\.[\d\-]+(?:\.[\d\-]+)?)\s*([^\[]+)?\s?(\[)?/)
+      //if (!captures) debugger
+      if (!captures) return puts(`Ignoring ${index.name}`)
+      var [,id,name] = captures
 
       var type = _.find(kegg.typeMap, t => t.prefix == id[0]) || kegg.typeMap.enzyme
       this.cache(type, id)
