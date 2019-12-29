@@ -77,9 +77,10 @@ kegg = {
       //if (!captures) debugger
       if (!captures) return puts(`Ignoring ${index.name}`)
       var [,id,name] = captures
-
       var type = _.find(kegg.typeMap, t => t.prefix == id[0]) || kegg.typeMap.enzyme
-      this.cache(type, id)
+
+      this.parseType(type, id)
+
       return {
         id:   id,
         type: type.name,
@@ -87,10 +88,8 @@ kegg = {
       }
     },
 
-    cache(type, id) {
-      kegg[type.name](id).then(obj => {
-        stream.push(type.name, obj)
-      })
+    parseType(type, id) {
+      return kegg[type.name](id)
     },
   },
 
@@ -102,10 +101,10 @@ kegg = {
     })
   },
 
-  compound(id) {
+  async compound(id) {
     return new Promise(resolve => {
       this.fetch(this.typeMap.compound.id, id).then(page => {
-        var parsed = {
+        data.emit('compound', {
           identifier: page.hValue('Entry').capture(/(C\d+)/),
           url:        page.url,
           names:      page.hValue('Name').split('\n').map(v => v.replace(/;$/,'')),
@@ -116,17 +115,15 @@ kegg = {
           enzymes:    page.enzymes(),
           references: page.references(),
           cross_refs: page.externalLinks(),
-        }
-        resolve(parsed)
-        stream.emit('compound', parsed)
+        }, resolve)
       })
     })
   },
 
-  reaction(id) {
+  async reaction(id) {
     return new Promise(resolve => {
       this.fetch(this.typeMap.reaction.id, id).then(page => {
-        var parsed = {
+        data.emit('reaction', {
           identifier: page.hValue('Entry').capture(/(R\d+)/),
           url:        page.url,
           name:       page.hValue('Name'),
@@ -135,17 +132,15 @@ kegg = {
           enzymes:    page.enzymes(),
           references: page.references(),
           cross_refs: page.externalLinks(),
-        }
-        resolve(parsed)
-        stream.emit('reaction', parsed)
+        }, resolve)
       })
     })
   },
 
-  enzyme(id) {
+  async enzyme(id) {
     return new Promise(resolve => {
       this.fetch(this.typeMap.enzyme.id, id).then(page => {
-        var parsed = {
+        data.emit('enzyme', {
           identifier: page.hValue('Entry').capture(/([\d\.]+)/),
           number:     page.hValue('Entry').capture(/([\d\.]+)/),
           url:        page.url,
@@ -158,17 +153,15 @@ kegg = {
           references: page.references(),
           cross_refs: page.externalLinks(),
           genes:      page.genes('Genes'),
-        }
-        resolve(parsed)
-        stream.emit('enzyme', parsed)
+        }, resolve)
       })
     })
   },
 
-  disease(id) {
+  async disease(id) {
     return new Promise(resolve => {
       this.fetch(this.typeMap.disease.id, id).then(page => {
-        var parsed = {
+        data.emit('disease', {
           identifier:  page.hValue('Entry').capture(/(H\d+)/),
           url:         page.url,
           description: page.hValue('Description'),
@@ -177,9 +170,7 @@ kegg = {
           env_factors: page.hValue('Env factor').split('\n'),
           drugs:       page.drugs('Drug'),
           references:  page.references(),
-        }
-        resolve(parsed)
-        stream.emit('disease', parsed)
+        }, resolve)
       })
     })
   },
