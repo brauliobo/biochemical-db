@@ -88,7 +88,9 @@ kegg = {
     },
 
     cache(type, id) {
-      kegg[type.name](id)
+      kegg[type.name](id).then(obj => {
+        stream.push(type.name, obj)
+      })
     },
   },
 
@@ -100,19 +102,42 @@ kegg = {
     })
   },
 
-  disease(id) {
+  compound(id) {
     return new Promise(resolve => {
-      this.fetch(this.typeMap.disease.id, id).then(page => {
-        resolve({
-          identifier:  page.hValue('Entry').capture(/(H\d+)/),
-          url:         page.url,
-          description: page.hValue('Description'),
-          category:    page.hValue('Category'),
-          genes:       page.linkedGenes('Gene'),
-          env_factors: page.hValue('Env factor').split('\n'),
-          drugs:       page.drugs('Drug'),
-          references:  page.references(),
-        })
+      this.fetch(this.typeMap.compound.id, id).then(page => {
+        var parsed = {
+          identifier: page.hValue('Entry').capture(/(C\d+)/),
+          url:        page.url,
+          names:      page.hValue('Name').split('\n').map(v => v.replace(/;$/,'')),
+          formula:    page.hValue('Formula'),
+          exact_mass: page.hValue('Exact mass'),
+          mol_weight: page.hValue('Mol weight'),
+          reactions:  page.reactions(),
+          enzymes:    page.enzymes(),
+          references: page.references(),
+          cross_refs: page.externalLinks(),
+        }
+        resolve(parsed)
+        stream.emit('compound', parsed)
+      })
+    })
+  },
+
+  reaction(id) {
+    return new Promise(resolve => {
+      this.fetch(this.typeMap.reaction.id, id).then(page => {
+        var parsed = {
+          identifier: page.hValue('Entry').capture(/(R\d+)/),
+          url:        page.url,
+          name:       page.hValue('Name'),
+          definition: page.hValue('Definition'),
+          equation:   page.equation(),
+          enzymes:    page.enzymes(),
+          references: page.references(),
+          cross_refs: page.externalLinks(),
+        }
+        resolve(parsed)
+        stream.emit('reaction', parsed)
       })
     })
   },
@@ -120,7 +145,7 @@ kegg = {
   enzyme(id) {
     return new Promise(resolve => {
       this.fetch(this.typeMap.enzyme.id, id).then(page => {
-        resolve({
+        var parsed = {
           identifier: page.hValue('Entry').capture(/([\d\.]+)/),
           number:     page.hValue('Entry').capture(/([\d\.]+)/),
           url:        page.url,
@@ -133,43 +158,28 @@ kegg = {
           references: page.references(),
           cross_refs: page.externalLinks(),
           genes:      page.genes('Genes'),
-        })
+        }
+        resolve(parsed)
+        stream.emit('enzyme', parsed)
       })
     })
   },
 
-  compound(id) {
+  disease(id) {
     return new Promise(resolve => {
-      this.fetch(this.typeMap.compound.id, id).then(page => {
-        resolve({
-          identifier: page.hValue('Entry').capture(/(C\d+)/),
-          url:        page.url,
-          names:      page.hValue('Name').split('\n').map(v => v.replace(/;$/,'')),
-          formula:    page.hValue('Formula'),
-          exact_mass: page.hValue('Exact mass'),
-          mol_weight: page.hValue('Mol weight'),
-          reactions:  page.reactions(),
-          enzymes:    page.enzymes(),
-          references: page.references(),
-          cross_refs: page.externalLinks(),
-        })
-      })
-    })
-  },
-
-  reaction(id) {
-    return new Promise(resolve => {
-      this.fetch(this.typeMap.reaction.id, id).then(page => {
-        resolve({
-          identifier: page.hValue('Entry').capture(/(R\d+)/),
-          url:        page.url,
-          name:       page.hValue('Name'),
-          definition: page.hValue('Definition'),
-          equation:   page.equation(),
-          enzymes:    page.enzymes(),
-          references: page.references(),
-          cross_refs: page.externalLinks(),
-        })
+      this.fetch(this.typeMap.disease.id, id).then(page => {
+        var parsed = {
+          identifier:  page.hValue('Entry').capture(/(H\d+)/),
+          url:         page.url,
+          description: page.hValue('Description'),
+          category:    page.hValue('Category'),
+          genes:       page.linkedGenes('Gene'),
+          env_factors: page.hValue('Env factor').split('\n'),
+          drugs:       page.drugs('Drug'),
+          references:  page.references(),
+        }
+        resolve(parsed)
+        stream.emit('disease', parsed)
       })
     })
   },
