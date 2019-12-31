@@ -25,7 +25,7 @@ data = {
 
   save(source, type, id, obj) {
     var path = `data/${source}/${type}/${id}.yaml`
-    fs.writeFileSync(path, yaml.safeDump(obj))
+    fs.writeFileSync(path, yaml.dump(obj))
   },
 
 }

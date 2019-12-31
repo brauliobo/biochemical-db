@@ -66,6 +66,8 @@ kegg = {
 
   index: {
 
+    queue: new Queue(20),
+
     parse(index) {
       return this.parseOne(index)
     },
@@ -79,7 +81,7 @@ kegg = {
       var [,id,name] = captures
       var type = _.find(kegg.typeMap, t => t.prefix == id[0]) || kegg.typeMap.enzyme
 
-      this.parseType(type, id)
+      this.queue.enqueue(() => this.parseType(type, id))
 
       return {
         id:   id,
@@ -88,8 +90,8 @@ kegg = {
       }
     },
 
-    parseType(type, id) {
-      return kegg[type.name](id)
+    async parseType(type, id) {
+      return await kegg[type.name](id)
     },
   },
 
@@ -167,7 +169,7 @@ kegg = {
           description: page.hValue('Description'),
           category:    page.hValue('Category'),
           genes:       page.linkedGenes('Gene'),
-          env_factors: page.hValue('Env factor').split('\n'),
+          env_factors: page.hValue('Env factor').split('\n').filter(f => f),
           drugs:       page.drugs('Drug'),
           references:  page.references(),
         }, resolve)
@@ -251,7 +253,7 @@ kegg = {
     }
 
     drugs(h) {
-      return this.hValue(h).split('\n').map((c, i) => {
+      return this.hValue(h).split('\n').filter(d => d).map((c, i) => {
         var link = this.headerLink(h, i+1)
         return {
           name:     c.capture(/(.+) \[DR/),

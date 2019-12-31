@@ -5,6 +5,7 @@ require('../lib/args.es6')
 require('../lib/data.es6')
 require('../lib/cache.es6')
 require('../lib/fetch.es6')
+Queue = require('../lib/queue.es6')
 
 xmldom          = require('xmldom')
 _               = require('lodash')
