@@ -17,10 +17,7 @@ require('./pubmed/pubmed.es6')
 
 stream = new EvEmitter()
 data.types.forEach(t => {
-  stream.on('compound', puts)
-  stream.on('reaction', puts)
-  stream.on('enzyme', puts)
-  stream.on('disease', puts)
+  stream.on(t, o => data.save(args.source, t, o.identifier, o))
 })
 
 data.setupDir(args.source)

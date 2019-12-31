@@ -1,4 +1,6 @@
 const { exec } = require('child_process')
+const fs       = require('fs')
+const yaml     = require('js-yaml')
 
 data = {
 
@@ -10,8 +12,8 @@ data = {
     'article',
   ],
 
-  setupDir(dir) {
-    var path = `data/${dir}`
+  setupDir(source) {
+    var path = `data/${source}`
     exec(`mkdir -p ${path}/{${this.types.join(',')}}`)
     return path
   },
@@ -21,8 +23,9 @@ data = {
     if (resolve) resolve(data)
   },
 
-  save({source, type, obj} = {}) {
-
+  save(source, type, id, obj) {
+    var path = `data/${source}/${type}/${id}.yaml`
+    fs.writeFileSync(path, yaml.safeDump(obj))
   },
 
 }
