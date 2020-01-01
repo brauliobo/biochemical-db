@@ -66,7 +66,7 @@ kegg = {
 
   index: {
 
-    queue: new Queue(20),
+    queue: new Queue(10),
 
     parse(index) {
       return this.parseOne(index)

@@ -8,8 +8,10 @@ fetchCached = (url, {file} = {}) => {
   file      = file || crypto.createHash('md5').update(url).digest("hex")
   var path  = `${dir}/${file}`
 
-  if (fs.existsSync(path))
+  if (fs.existsSync(path)) {
+    console.log(`CACHE-GET: ${url}`)
     return Promise.resolve(fs.readFileSync(path, 'utf8'))
+  }
 
   return fetch(url).then(response => {
     return new Promise(resolve => {
