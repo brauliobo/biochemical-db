@@ -223,13 +223,13 @@ kegg = {
     references() {
       var h = 'Reference'
       return this.rows(h).map((reference, i) => {
-        var authors   = reference.nextElementSibling
-        var title     = authors.nextElementSibling
-        var journal   = title.nextElementSibling
+        var authors = this.sibblingHeader(reference, 'Authors')
+        var title   = this.sibblingHeader(reference, 'Title')
+        var journal = this.sibblingHeader(reference, 'Journal')
         return {
           pmid:    this.rowValue(reference).capture(/PMID:(\d+)/),
           doi_id:  this.rowValue(journal).capture(/DOI:([\d\.\/()\-]+)/),
-          authors: this.rowValue(authors).split(', '),
+          authors: this.rowValue(authors).split(', ').filter(a => a),
           title:   this.rowValue(title),
           journal: this.rowValue(journal),
         }
@@ -357,15 +357,6 @@ kegg = {
       return `${kegg.baseUrl}/dbget-bin/www_bget?${type.id}:${id}`
     }
 
-    rowValue(row, i = 1, {selector = `td:nth-of-type(${i})`} = {}) {
-      if (!row) return
-      return this.text(row.querySelector(selector))
-    }
-
-    hValue(h, {selector = 'td'} = {}) {
-      return this.text(this.rowSelect(h, {selector: selector}))
-    }
-
     rowSelect(h, {selector = 'td'} = {}) {
       var row = this.row(h)
       if (!row) return 
@@ -377,17 +368,34 @@ kegg = {
       return row.querySelectorAll(selector)
     }
 
+    sibblingHeader(r, nh) {
+      var rh = this.text(r.querySelector('th'))
+      var n  = r
+      while (n = n.nextElementSibling) {
+        var sh = this.text(n.querySelector('th'))
+        if (sh == rh) return
+        if (sh == nh) return n
+      }
+    }
+
+    hValue(h, {selector = 'td'} = {}) {
+      return this.text(this.rowSelect(h, {selector: selector}))
+    }
+    rowValue(row, i = 1, {selector = `td:nth-of-type(${i})`} = {}) {
+      if (!row) return ''
+      return this.text(row.querySelector(selector))
+    }
+    text(el) {
+      if (!el) return ''
+      return el.innerText.trim()
+    }
+
     rows(h) {
       return this.table.querySelectorAll(`tr > th:contains('${h}')`).map((th) => th.parentElement)
     }
     row(h) {
       var th = this.table.querySelector(`tr > th:contains('${h}')`)
       if (th) return th.parentElement
-    }
-
-    text(el) {
-      if (!el) return ''
-      return el.innerText.trim()
     }
 
   },
