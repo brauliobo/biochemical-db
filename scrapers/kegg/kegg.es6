@@ -239,7 +239,7 @@ kegg = {
     linkedGenes(h) {
       return this.hValue(h).split('\n').filter(g => g).flatMap((g, i) => {
         var captures = g.match(/([^\[]+)(?: \(([^\)]+)\))? \[HSA:([\d\s]+)\]/)
-        if (!captures || !captures[3]) return puts(`Skipping gene '${g}' without id`)
+        if (!captures || !captures[3]) return puts(`${this.id}: Skipping gene '${g}' without id`)
         var ids      = captures[3].split(' ')
         return ids.map(id => {
           return {
