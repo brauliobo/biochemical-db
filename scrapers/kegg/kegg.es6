@@ -222,23 +222,24 @@ kegg = {
 
     references() {
       var h = 'Reference'
-      return this.rows(h).map((r, i) => {
-        var v = this.rowValue(r)
-        var journal = this.rowValue(this.subrow('Title', 'Journal', i+1))
+      return this.rows(h).map((reference, i) => {
+        var authors   = reference.nextElementSibling
+        var title     = authors.nextElementSibling
+        var journal   = title.nextElementSibling
         return {
-          number:  v.capture(/(\d+)\s/),
-          pmid:    v.capture(/PMID:(\d+)/),
-          doi_id:  journal.capture(/DOI:([\d\.\/()\-]+)/),
-          authors: this.rowValue(this.subrow(h, 'Authors', i+1)).split(', '),
-          title:   this.rowValue(this.subrow('Authors', 'Title', i+1)),
-          journal: journal,
+          pmid:    this.rowValue(reference).capture(/PMID:(\d+)/),
+          doi_id:  this.rowValue(journal).capture(/DOI:([\d\.\/()\-]+)/),
+          authors: this.rowValue(authors).split(', '),
+          title:   this.rowValue(title),
+          journal: this.rowValue(journal),
         }
       })
     }
 
     linkedGenes(h) {
-      return this.hValue(h).split('\n').flatMap((g, i) => {
-        var captures = g.match(/([^([)]+)(?: \(([^\)]+)\))? \[HSA:([\d\s]+)\]/)
+      return this.hValue(h).split('\n').filter(g => g).flatMap((g, i) => {
+        var captures = g.match(/([^\[]+)(?: \(([^\)]+)\))? \[HSA:([\d\s]+)\]/)
+        if (!captures || !captures[3]) return puts(`Skipping gene '${g}' without id`)
         var ids      = captures[3].split(' ')
         return ids.map(id => {
           return {
@@ -357,6 +358,7 @@ kegg = {
     }
 
     rowValue(row, i = 1, {selector = `td:nth-of-type(${i})`} = {}) {
+      if (!row) return
       return this.text(row.querySelector(selector))
     }
 
@@ -376,13 +378,8 @@ kegg = {
     }
 
     rows(h) {
-      return this.table.querySelectorAll(`tr:contains('${h}')`)
+      return this.table.querySelectorAll(`tr > th:contains('${h}')`).map((th) => th.parentElement)
     }
-
-    subrow(h, sh, i = 1) {
-      return this.table.querySelector(`tr:contains('${h}'):nth-of-type(${i}) + tr:contains('${sh}')`)
-    }
-
     row(h) {
       var th = this.table.querySelector(`tr > th:contains('${h}')`)
       if (th) return th.parentElement
