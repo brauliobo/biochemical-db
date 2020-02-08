@@ -4,6 +4,7 @@ const libxml = require('libxmljs-dom')
 kegg = {
 
   baseUrl: `https://www.genome.jp`,
+  batch:   false,
 
   typeMap: {
     compound: {
@@ -97,6 +98,7 @@ kegg = {
 
   database(id) {
     if (id == 'all') return Promise.all(this.databases.list.map(id => this.database(id)))
+    this.batch = true
 
     return new Promise(resolve => {
       this.databases.download(id).then((i) => resolve(this.index.parse(i)))
@@ -118,7 +120,7 @@ kegg = {
           references: page.references(),
           cross_refs: page.externalLinks(),
         }, resolve)
-      })
+      }).catch((e) => this.catch(id, e))
     })
   },
 
@@ -135,7 +137,7 @@ kegg = {
           references: page.references(),
           cross_refs: page.externalLinks(),
         }, resolve)
-      })
+      }).catch((e) => this.catch(id, e))
     })
   },
 
@@ -156,7 +158,7 @@ kegg = {
           cross_refs: page.externalLinks(),
           genes:      page.genes('Genes'),
         }, resolve)
-      })
+      }).catch((e) => this.catch(id, e))
     })
   },
 
@@ -173,7 +175,7 @@ kegg = {
           drugs:       page.drugs('Drug'),
           references:  page.references(),
         }, resolve)
-      })
+      }).catch((e) => this.catch(id, e))
     })
   },
 
@@ -182,9 +184,14 @@ kegg = {
     return new Promise(resolve => {
       fetchCached(url, {file: id}).then(page => {
         var doc = libxml.parseHtml(page, {baseUrl: url})
-        resolve(new this.page(doc, url))
+        resolve(new this.page(doc, url, id))
       })
     })
+  },
+
+  catch(id, error) {
+    puts(`${id}: ${error}`)
+    if (!this.batch) throw error
   },
 
   page: class Page {
@@ -196,9 +203,10 @@ kegg = {
       RHEA:      'rhea_url',
     }
     
-    constructor(doc, url) {
+    constructor(doc, url, id) {
       this.doc   = doc
       this.url   = url
+      this.id    = id
       this.table = doc.querySelector('form table table')
     }
 
@@ -230,14 +238,17 @@ kegg = {
     }
 
     linkedGenes(h) {
-      return this.hValue(h).split('\n').map((g, i) => {
-        var captures = g.match(/([^ ]+) \(([^\)]+)\) \[HSA:(\d+)\]/)
-        return {
-          identifier: captures[1],
-          variation:  captures[2],
-          kegg_id:    captures[3],
-          kegg_url:   this.linkFor(kegg.typeMap.human_gene, captures[3]),
-        }
+      return this.hValue(h).split('\n').flatMap((g, i) => {
+        var captures = g.match(/([^([)]+)(?: \(([^\)]+)\))? \[HSA:([\d\s]+)\]/)
+        var ids      = captures[3].split(' ')
+        return ids.map(id => {
+          return {
+            identifier: captures[1],
+            variation:  captures[2],
+            kegg_id:    id,
+            kegg_url:   this.linkFor(kegg.typeMap.human_gene, id),
+          }
+        })
       })
     }
 
