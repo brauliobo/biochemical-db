@@ -77,7 +77,6 @@ kegg = {
       if (index.children) return index.children.flatMap(c => this.parseOne(c)).filter(c => c)
 
       var captures = index.name.match(/([HCR]\d+|\d+\.[\d\-]+\.[\d\-]+(?:\.[\d\-]+)?)\s*([^\[]+)?\s?(\[)?/)
-      //if (!captures) debugger
       if (!captures) return puts(`Ignoring ${index.name}`)
       var [,id,name] = captures
       var type = _.find(kegg.typeMap, t => t.prefix == id[0]) || kegg.typeMap.enzyme
@@ -385,7 +384,8 @@ kegg = {
     }
 
     row(h) {
-      return this.table.querySelector(`tr:contains('${h}')`)
+      var th = this.table.querySelector(`tr > th:contains('${h}')`)
+      if (th) return th.parentElement
     }
 
     text(el) {
