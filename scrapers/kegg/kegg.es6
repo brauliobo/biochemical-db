@@ -264,7 +264,7 @@ kegg = {
     }
 
     compounds(h) {
-      return this.hValue(h).split('\n').map((c, i) => {
+      return this.hValue(h).split('\n').filter(c => c).map((c, i) => {
         c = c.replace(/;$/,'')
         var link = this.headerLink(h, i+1)
         return {
@@ -330,6 +330,7 @@ kegg = {
     }
 
     rowLink(row, i = 1) {
+      if (!row) return
       var link = row.querySelector(`a:nth-of-type(${i})`)
       return this.link(link)
     }
