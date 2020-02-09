@@ -169,8 +169,7 @@ kegg = {
         fetchCached(url, {file: id}).then(page => {
           var doc = libxml.parseHtml(page, {baseUrl: url})
           page    = new this.page(doc, url, id)
-          var obj = resolve(page)
-          data.emit(type.name, obj)
+          resolve(page)
         })
       })
     })

@@ -16,6 +16,8 @@ require('./uniprot/uniprot.es6')
 require('./pubmed/pubmed.es6')
 
 data = new Data(args.source)
-global[args.source][args.type](args.id).then(puts)
+global[args.source][args.type](args.id).then((o) => {
+  if (o) data.emit(args.type, o)
+})
 
 
