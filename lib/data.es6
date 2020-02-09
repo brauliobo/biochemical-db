@@ -12,14 +12,28 @@ class Data {
     'disease',
     'article',
   ]
+  batch = false
 
   constructor(source) {
+    this.source = source
     this.stream = new EvEmitter()
     this.setupDir(source)
 
     this.types.forEach(t => {
-      this.stream.on(t, o => this.save(source, t, o.identifier, o))
+      this.stream.on(t, o => {
+        if (!this.batch) puts(o)
+        this.save(t, o.identifier, o)
+      })
     })
+  }
+
+  fetch(type, id) {
+    var content = fs.readFileSync(this.pathFor(type, id), 'utf8')
+    return yaml.load(content)
+  }
+
+  isCached(type, id) {
+    return fs.existsSync(this.pathFor(type, id))
   }
 
   setupDir(source) {
@@ -33,9 +47,12 @@ class Data {
     if (resolve) resolve(data)
   }
 
-  save(source, type, id, obj) {
-    var path = `data/${source}/${type}/${id}.yaml`
-    fs.writeFileSync(path, yaml.dump(obj))
+  save(type, id, obj) {
+    fs.writeFileSync(this.pathFor(type, id, obj), yaml.dump(obj))
+  }
+  
+  pathFor(type, id, obj) {
+    return `data/${this.source}/${type}/${id}.yaml`
   }
 
 }

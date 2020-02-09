@@ -4,7 +4,6 @@ const libxml = require('libxmljs-dom')
 kegg = {
 
   baseUrl: `https://www.genome.jp`,
-  batch:   false,
 
   typeMap: {
     compound: {
@@ -97,7 +96,7 @@ kegg = {
 
   database(id) {
     if (id == 'all') return Promise.all(this.databases.list.map(id => this.database(id)))
-    this.batch = true
+    data.batch = true
 
     return new Promise(resolve => {
       this.databases.download(id).then((i) => resolve(this.index.parse(i)))
@@ -106,7 +105,7 @@ kegg = {
 
   async compound(id) {
     return new Promise(resolve => {
-      this.fetch(this.typeMap.compound.id, id).then(page => {
+      this.fetch(this.typeMap.compound, id).then(page => {
         data.emit('compound', {
           identifier: page.hValue('Entry').capture(/(C\d+)/),
           url:        page.url,
@@ -125,7 +124,7 @@ kegg = {
 
   async reaction(id) {
     return new Promise(resolve => {
-      this.fetch(this.typeMap.reaction.id, id).then(page => {
+      this.fetch(this.typeMap.reaction, id).then(page => {
         data.emit('reaction', {
           identifier: page.hValue('Entry').capture(/(R\d+)/),
           url:        page.url,
@@ -142,7 +141,7 @@ kegg = {
 
   async enzyme(id) {
     return new Promise(resolve => {
-      this.fetch(this.typeMap.enzyme.id, id).then(page => {
+      this.fetch(this.typeMap.enzyme, id).then(page => {
         data.emit('enzyme', {
           identifier: page.hValue('Entry').capture(/([\d\.]+)/),
           number:     page.hValue('Entry').capture(/([\d\.]+)/),
@@ -162,35 +161,46 @@ kegg = {
   },
 
   async disease(id) {
-    return new Promise(resolve => {
-      this.fetch(this.typeMap.disease.id, id).then(page => {
-        data.emit('disease', {
-          identifier:  page.hValue('Entry').capture(/(H\d+)/),
-          url:         page.url,
-          description: page.hValue('Description'),
-          category:    page.hValue('Category'),
-          genes:       page.linkedGenes('Gene'),
-          env_factors: page.hValue('Env factor').split('\n').filter(f => f),
-          drugs:       page.drugs('Drug'),
-          references:  page.references(),
-        }, resolve)
-      }).catch((e) => this.catch(id, e))
+    return new Promise((resolve, reject) => {
+      this.fetch(this.typeMap.disease, id).then(page => resolve({
+        identifier:  page.hValue('Entry').capture(/(H\d+)/),
+        url:         page.url,
+        description: page.hValue('Description'),
+        category:    page.hValue('Category'),
+        genes:       page.linkedGenes('Gene'),
+        env_factors: page.hValue('Env factor').split('\n').filter(f => f),
+        drugs:       page.drugs('Drug'),
+        references:  page.references(),
+      })).catch((o) => this.catch(id, o, resolve, reject))
     })
   },
 
-  fetch(prefix, id) {
-    var url = `${this.baseUrl}/dbget-bin/www_bget?${prefix}:${id}`
+  fetch(type, id) {
+    if (data.isCached(type.name, id)) {
+      var obj = data.fetch(type.name, id)
+      data.emit(type.name, obj)
+      puts(`${id}: fetched from cache`)
+      return Promise.reject(obj)
+    }
+
     return new Promise(resolve => {
+      var url = `${this.baseUrl}/dbget-bin/www_bget?${type.id}:${id}`
       fetchCached(url, {file: id}).then(page => {
         var doc = libxml.parseHtml(page, {baseUrl: url})
-        resolve(new this.page(doc, url, id))
+        page    = new this.page(doc, url, id)
+        var obj = resolve(page)
+        data.emit(type.name, obj)
       })
     })
   },
 
-  catch(id, error) {
-    puts(`${id}: ${error}`)
-    if (!this.batch) throw error
+  catch(id, arg, resolve, reject) {
+    if (arg instanceof Error) {
+      puts(`${id}: ${error}`)
+      reject()
+      if (!data.batch) throw error
+    } else 
+      resolve(arg)
   },
 
   page: class Page {
