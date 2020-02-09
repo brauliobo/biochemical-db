@@ -28,7 +28,7 @@ class Data {
   }
 
   fetchWithCache(type, id) {
-    if (this.isCached(type.name, id)) {
+    if (data.batch && this.isCached(type.name, id)) {
       var obj = this.fromCache(type.name, id)
       this.emit(type.name, obj)
       puts(`${id}: fetched from cache`)

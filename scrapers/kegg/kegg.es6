@@ -7,8 +7,8 @@ kegg = {
 
   typeMap: {
     compound: {
-      name:   'compound',
       id:     'cpd',
+      name:   'compound',
       prefix: 'C',
     },
     reaction: {
@@ -22,8 +22,8 @@ kegg = {
       prefix: '',
     },
     disease: {
-      name:   'disease',
       id:     'ds',
+      name:   'disease',
       prefix: 'H',
     },
     human_gene: {
@@ -104,7 +104,7 @@ kegg = {
   },
 
   async compound(id) {
-    return this.fetch(this.typeMap.reaction, id).then(page => Promise.resolve({
+    return this.fetch(this.typeMap.compound, id).then(page => Promise.resolve({
       identifier: page.hValue('Entry').capture(/(C\d+)/),
       url:        page.url,
       names:      page.hValue('Name').split('\n').map(v => v.replace(/;$/,'')),
@@ -170,7 +170,7 @@ kegg = {
           var doc = libxml.parseHtml(page, {baseUrl: url})
           page    = new this.page(doc, url, id)
           resolve(page)
-        })
+        }).catch((e) => this.catch(id, e))
       })
     })
   },
@@ -178,7 +178,6 @@ kegg = {
   catch(id, err) {
     if (err instanceof Error) {
       puts(`${id}: ${err}`)
-      reject()
       if (!data.batch) throw err
     }
   },
@@ -270,8 +269,8 @@ kegg = {
         var link = this.headerLink(h, i+1)
         return {
           name:     c.capture(/(.+) \[CPD/),
-          kegg_id:  link.text,
-          kegg_url: link.url,
+          kegg_id:  link ? link.text : null,
+          kegg_url: link ? link.url  : null,
         }
       })
     }
@@ -315,9 +314,9 @@ kegg = {
       var h    = 'Reaction(IUBMB)'
       var link = this.headerLink(h)
       return {
-        representation: this.hValue(h).capture(/(.+) \[RN/),
-        kegg_id:        link.text,
-        kegg_url:       link.url,
+        representation: this.hValue(h).capture(/(.+)(?: \[RN)?/),
+        kegg_id:        link ? link.text : null,
+        kegg_url:       link ? link.url  : null,
       }
     }
 
@@ -336,6 +335,7 @@ kegg = {
     }
 
     link(el) {
+      if (!el) return
       var url = el.href.startsWith('/') ? `${kegg.baseUrl}${el.href}` : el.href
       return {
         text: el.innerText,
