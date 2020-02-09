@@ -104,103 +104,84 @@ kegg = {
   },
 
   async compound(id) {
-    return new Promise(resolve => {
-      this.fetch(this.typeMap.compound, id).then(page => {
-        data.emit('compound', {
-          identifier: page.hValue('Entry').capture(/(C\d+)/),
-          url:        page.url,
-          names:      page.hValue('Name').split('\n').map(v => v.replace(/;$/,'')),
-          formula:    page.hValue('Formula'),
-          exact_mass: page.hValue('Exact mass'),
-          mol_weight: page.hValue('Mol weight'),
-          reactions:  page.reactions(),
-          enzymes:    page.enzymes(),
-          references: page.references(),
-          cross_refs: page.externalLinks(),
-        }, resolve)
-      }).catch((e) => this.catch(id, e))
-    })
+    return this.fetch(this.typeMap.reaction, id).then(page => Promise.resolve({
+      identifier: page.hValue('Entry').capture(/(C\d+)/),
+      url:        page.url,
+      names:      page.hValue('Name').split('\n').map(v => v.replace(/;$/,'')),
+      formula:    page.hValue('Formula'),
+      exact_mass: page.hValue('Exact mass'),
+      mol_weight: page.hValue('Mol weight'),
+      reactions:  page.reactions(),
+      enzymes:    page.enzymes(),
+      references: page.references(),
+      cross_refs: page.externalLinks(),
+    })).catch((e) => this.catch(id, e))
   },
 
   async reaction(id) {
-    return new Promise(resolve => {
-      this.fetch(this.typeMap.reaction, id).then(page => {
-        data.emit('reaction', {
-          identifier: page.hValue('Entry').capture(/(R\d+)/),
-          url:        page.url,
-          name:       page.hValue('Name'),
-          definition: page.hValue('Definition'),
-          equation:   page.equation(),
-          enzymes:    page.enzymes(),
-          references: page.references(),
-          cross_refs: page.externalLinks(),
-        }, resolve)
-      }).catch((e) => this.catch(id, e))
-    })
+    return this.fetch(this.typeMap.reaction, id).then(page => Promise.resolve({
+      identifier: page.hValue('Entry').capture(/(R\d+)/),
+      url:        page.url,
+      name:       page.hValue('Name'),
+      definition: page.hValue('Definition'),
+      equation:   page.equation(),
+      enzymes:    page.enzymes(),
+      references: page.references(),
+      cross_refs: page.externalLinks(),
+    })).catch((e) => this.catch(id, e))
   },
 
   async enzyme(id) {
-    return new Promise(resolve => {
-      this.fetch(this.typeMap.enzyme, id).then(page => {
-        data.emit('enzyme', {
-          identifier: page.hValue('Entry').capture(/([\d\.]+)/),
-          number:     page.hValue('Entry').capture(/([\d\.]+)/),
-          url:        page.url,
-          names:      page.hValue('Name').split('\n').map(v => v.replace(/;$/,'')),
-          sysname:    page.hValue('Sysname'),
-          classes:    page.hValue('Class').split('\n').map(v => v.replace(/;$/,'')),
-          reaction:   page.reaction(),
-          substrates: page.compounds('Substrate'),
-          products:   page.compounds('Product'),
-          references: page.references(),
-          cross_refs: page.externalLinks(),
-          genes:      page.genes('Genes'),
-        }, resolve)
-      }).catch((e) => this.catch(id, e))
-    })
+    return this.fetch(this.typeMap.enzyme, id).then(page => Promise.resolve({
+      identifier: page.hValue('Entry').capture(/([\d\.]+)/),
+      number:     page.hValue('Entry').capture(/([\d\.]+)/),
+      url:        page.url,
+      names:      page.hValue('Name').split('\n').map(v => v.replace(/;$/,'')),
+      sysname:    page.hValue('Sysname'),
+      classes:    page.hValue('Class').split('\n').map(v => v.replace(/;$/,'')),
+      reaction:   page.reaction(),
+      substrates: page.compounds('Substrate'),
+      products:   page.compounds('Product'),
+      references: page.references(),
+      cross_refs: page.externalLinks(),
+      genes:      page.genes('Genes'),
+    })).catch((e) => this.catch(id, e))
   },
 
   async disease(id) {
-    return new Promise((resolve, reject) => {
-      this.fetch(this.typeMap.disease, id).then(page => resolve({
-        identifier:  page.hValue('Entry').capture(/(H\d+)/),
-        url:         page.url,
-        description: page.hValue('Description'),
-        category:    page.hValue('Category'),
-        genes:       page.linkedGenes('Gene'),
-        env_factors: page.hValue('Env factor').split('\n').filter(f => f),
-        drugs:       page.drugs('Drug'),
-        references:  page.references(),
-      })).catch((o) => this.catch(id, o, resolve, reject))
-    })
+    return this.fetch(this.typeMap.disease, id).then(page => Promise.resolve({
+      identifier:  page.hValue('Entry').capture(/(H\d+)/),
+      url:         page.url,
+      description: page.hValue('Description'),
+      category:    page.hValue('Category'),
+      genes:       page.linkedGenes('Gene'),
+      env_factors: page.hValue('Env factor').split('\n').filter(f => f),
+      drugs:       page.drugs('Drug'),
+      references:  page.references(),
+    }, (o) => Promise.resolve(o))).catch((e) => this.catch(id, e))
   },
 
   fetch(type, id) {
-    if (data.isCached(type.name, id)) {
-      var obj = data.fetch(type.name, id)
-      data.emit(type.name, obj)
-      puts(`${id}: fetched from cache`)
-      return Promise.reject(obj)
-    }
-
-    return new Promise(resolve => {
+    return data.fetchWithCache(type, id).then(obj => {
+      if (obj) return Promise.reject(obj)
       var url = `${this.baseUrl}/dbget-bin/www_bget?${type.id}:${id}`
-      fetchCached(url, {file: id}).then(page => {
-        var doc = libxml.parseHtml(page, {baseUrl: url})
-        page    = new this.page(doc, url, id)
-        var obj = resolve(page)
-        data.emit(type.name, obj)
+      return new Promise(resolve => {
+        fetchCached(url, {file: id}).then(page => {
+          var doc = libxml.parseHtml(page, {baseUrl: url})
+          page    = new this.page(doc, url, id)
+          var obj = resolve(page)
+          data.emit(type.name, obj)
+        })
       })
     })
   },
 
-  catch(id, arg, resolve, reject) {
-    if (arg instanceof Error) {
-      puts(`${id}: ${error}`)
+  catch(id, err) {
+    if (err instanceof Error) {
+      puts(`${id}: ${err}`)
       reject()
-      if (!data.batch) throw error
-    } else 
-      resolve(arg)
+      if (!data.batch) throw err
+    }
   },
 
   page: class Page {

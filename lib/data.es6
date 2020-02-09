@@ -27,7 +27,17 @@ class Data {
     })
   }
 
-  fetch(type, id) {
+  fetchWithCache(type, id) {
+    if (this.isCached(type.name, id)) {
+      var obj = this.fromCache(type.name, id)
+      this.emit(type.name, obj)
+      puts(`${id}: fetched from cache`)
+      return Promise.resolve(obj)
+    }
+    return Promise.resolve()
+  }
+
+  fromCache(type, id) {
     var content = fs.readFileSync(this.pathFor(type, id), 'utf8')
     return yaml.load(content)
   }
