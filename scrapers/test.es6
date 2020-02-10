@@ -1,9 +1,10 @@
 require('../lib/string.es6')
-require('../lib/xml2json.es6')
 require('../lib/puts.es6')
 require('../lib/args.es6')
+require('../lib/xml2json.es6')
 require('../lib/cache.es6')
 require('../lib/fetch.es6')
+Index = require('../lib/index.es6')
 Data  = require('../lib/data.es6')
 Queue = require('../lib/queue.es6')
 

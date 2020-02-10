@@ -28,7 +28,7 @@ class Data {
   }
 
   fetchWithCache(type, id) {
-    if (data.batch && this.isCached(type.name, id)) {
+    if (this.batch && this.isCached(type.name, id)) {
       var obj = this.fromCache(type.name, id)
       this.emit(type.name, obj)
       puts(`${id}: fetched from cache`)
@@ -52,9 +52,9 @@ class Data {
     return path
   }
 
-  emit(type, data, resolve) {
-    this.stream.emit(type, data)
-    if (resolve) resolve(data)
+  emit(type, obj, resolve) {
+    this.stream.emit(type, obj)
+    if (resolve) resolve(obj)
   }
 
   save(type, id, obj) {
