@@ -5,10 +5,13 @@ const csvParser = require('csv-parser')
 const tar       = require('tar-stream')
 const zlib      = require('zlib')
 const query     = require('querystring')
+const libxml    = require('libxmljs-dom')
 
 pubmed = {
 
-  async database() {
+  articlesDir: `cache/pubmed/articles`,
+
+  database() {
     return new Promise(async (resolve) => {
       await this.ftp.init()
       await this.ftp.downloadCsv()
@@ -16,12 +19,23 @@ pubmed = {
     })
   },
 
-  article(file) {
-    var xml = fs.readFileSync(file, 'utf8')
-    xml  = new xmldom.DOMParser().parseFromString(xml, 'text/xml')
-    json = xml2json(xml, {ignoreTags: ['body']})
-    debugger
-    return Promise.resolve()
+  index() {
+    fs.readdirSync(`${articlesDir}`).forEach((f) => {
+
+    })
+  },
+
+  article(id) {
+    var xml = fs.readFileSync(`${this.articlesDir}/${id}.nxml`, 'utf8')
+    //parseHtml doesnt work with a <body> tag
+    var doc = libxml.parseHtmlFragment(xml, {huge: true})
+    var obj = {
+      id:       id,
+      title:    doc.querySelector('article-title').innerText,
+      abstract: doc.querySelector('abstract').innerText,
+      body:     doc.querySelector('body').innerText,
+    }
+    return Promise.resolve(obj)
   },
 
   articles: {
