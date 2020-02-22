@@ -10,6 +10,7 @@ const libxml    = require('libxmljs-dom')
 pubmed = {
 
   articlesDir: `cache/pubmed/articles`,
+  searchIndex: new Index('articles'),
 
   database() {
     return new Promise(async (resolve) => {
@@ -19,9 +20,16 @@ pubmed = {
     })
   },
 
-  index() {
-    fs.readdirSync(`${articlesDir}`).forEach((f) => {
+  index(id) {
+    this.article(id).then((obj) => {
+      this.searchIndex.index(obj)
+    })
+  },
 
+  indexAll() {
+    fs.readdirSync(this.articlesDir).forEach((f) => {
+      var id = f.split('.').slice(0, -1).join('.')
+      index(id)
     })
   },
 

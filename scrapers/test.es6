@@ -1,20 +1,12 @@
-require('../lib/string.es6')
-require('../lib/puts.es6')
-require('../lib/args.es6')
-require('../lib/xml2json.es6')
-require('../lib/cache.es6')
-require('../lib/fetch.es6')
-Index = require('../lib/index.es6')
-Data  = require('../lib/data.es6')
-Queue = require('../lib/queue.es6')
+require('../lib/all.es6')
 
 xmldom = require('xmldom')
 _      = require('lodash')
 
-require('./expasy/expasy.es6')
-require('./kegg/kegg.es6')
-require('./uniprot/uniprot.es6')
-require('./pubmed/pubmed.es6')
+require(`./${args.source}/${args.source}.es6`)
+
+if (args.action)
+  return global[args.source][args.action](args.id)
 
 data = new Data(args.source)
 global[args.source][args.type](args.id).then((o) => {

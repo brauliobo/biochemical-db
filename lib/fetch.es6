@@ -1,7 +1,6 @@
 _fetch       = require('node-fetch')
 const fs     = require('fs')
 const crypto = require('crypto')
-const async  = require('async')
 
 const dir   = cache.setupDir('fetch')
 fetchCached = (url, {file} = {}) => {

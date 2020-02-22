@@ -1,0 +1,25 @@
+{
+  "name": "biochemical-db",
+  "license": {
+    "type": "GPLv3"
+  },
+  "dependencies": {
+    "basic-ftp": "latest",
+    "crypto": "latest",
+    "csv-parser": "latest",
+    "elasticsearch": "^16.6.0",
+    "js-yaml": "latest",
+    "libxmljs-dom": "latest",
+    "lodash": "latest",
+    "node-fetch": "latest",
+    "osmosis": "latest",
+    "querystring": "latest",
+    "tar-stream": "latest",
+    "xmldom": "latest",
+    "zlib": "latest",
+    "needle": "~1.6.0"
+  },
+  "devDependencies": {
+    "pryjs": "^1.0.3"
+  }
+}
