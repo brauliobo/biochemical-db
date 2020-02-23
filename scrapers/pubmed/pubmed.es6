@@ -39,8 +39,8 @@ pubmed = {
     var xml = fs.readFileSync(`${this.articlesDir}/${id}.nxml`, 'utf8')
     //parseHtml doesnt work with a <body> tag
     var doc = libxml.parseHtmlFragment(xml, {huge: true})
-    //if (!doc.querySelector('article'))
-      //throw '<article> tag not found'
+    if (!doc.querySelector('article'))
+      throw '<article> tag not found'
 
     var title    = doc.querySelector('article-title')
     var abstract = doc.querySelector('abstract')
