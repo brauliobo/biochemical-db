@@ -19,12 +19,12 @@ class Data {
     this.stream = new EvEmitter()
     this.setupDir(source)
 
-    this.types.forEach(t => {
+    for (t in this.types) {
       this.stream.on(t, o => {
         if (!this.batch) puts(o)
         this.save(t, o.identifier, o)
       })
-    })
+    }
   }
 
   fetchWithCache(type, id) {

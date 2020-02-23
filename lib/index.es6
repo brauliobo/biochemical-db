@@ -7,16 +7,16 @@ class Index {
     this.client = new elasticsearch.Client({node: 'http://localhost:9200'})
   }
 
-  index(obj) {
-    return this.client.index({index: this.name, body: obj})
+  async index(obj) {
+    return await this.client.index({index: this.name, body: obj, refresh: 'wait_for'})
   }
 
-  search(obj) {
-    return this.client.search({index: this.name, body: obj})
+  search(query) {
+    return this.client.search({index: this.name, q: query})
   }
 
   deleteAll() {
-    this.client.deleteByQuery({index: this.name, body: {query: {match_all: {}}}})
+    return this.client.deleteByQuery({index: this.name, body: {query: {match_all: {}}}})
   }
 
 }

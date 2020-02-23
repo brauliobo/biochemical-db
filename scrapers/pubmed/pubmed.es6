@@ -21,27 +21,35 @@ pubmed = {
   },
 
   index(id) {
-    this.article(id).then((obj) => {
-      this.searchIndex.index(obj)
-    })
+    puts(`${id}: indexing article`)
+    this.article(id).then(async obj => {
+      await this.searchIndex.index(obj)
+    }).catch((e) => puts(`${id}: ${e}`))
   },
 
-  indexAll() {
-    fs.readdirSync(this.articlesDir).forEach((f) => {
+  async indexAll() {
+    await this.searchIndex.deleteAll()
+    for (const f of fs.readdirSync(this.articlesDir)) {
       var id = f.split('.').slice(0, -1).join('.')
-      index(id)
-    })
+      await this.index(id)
+    }
   },
 
   article(id) {
     var xml = fs.readFileSync(`${this.articlesDir}/${id}.nxml`, 'utf8')
     //parseHtml doesnt work with a <body> tag
     var doc = libxml.parseHtmlFragment(xml, {huge: true})
+    //if (!doc.querySelector('article'))
+      //throw '<article> tag not found'
+
+    var title    = doc.querySelector('article-title')
+    var abstract = doc.querySelector('abstract')
+    var body     = doc.querySelector('body')
     var obj = {
       id:       id,
-      title:    doc.querySelector('article-title').innerText,
-      abstract: doc.querySelector('abstract').innerText,
-      body:     doc.querySelector('body').innerText,
+      title:    title ? title.innerText.trim() : null,
+      abstract: abstract ? abstract.innerText.trim() : null,
+      body:     body ? body.innerText.trim() : null,
     }
     return Promise.resolve(obj)
   },
