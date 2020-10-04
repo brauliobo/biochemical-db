@@ -11,6 +11,7 @@ pubmed = {
 
   articlesDir: `cache/pubmed/articles`,
   searchIndex: new Index('articles'),
+  indexQueue:  new Queue(10000),
 
   database() {
     return new Promise(async (resolve) => {
@@ -30,7 +31,7 @@ pubmed = {
     await this.searchIndex.connect()
     for await (const f of fs.readdirSync(this.articlesDir)) {
       var id = f.split('.').slice(0, -1).join('.')
-      await this.index(id)
+      await this.indexQueue.enqueue(() => this.index(id))
     }
   },
 

@@ -6,7 +6,7 @@ _      = require('lodash')
 require(`./${args.source}/${args.source}.es6`)
 
 async function init() {
-  await new Promise(resolve => setTimeout(resolve, 5000))
+  //await new Promise(resolve => setTimeout(resolve, 5000))
 
   if (args.action)
     return global[args.source][args.action](args.id)
