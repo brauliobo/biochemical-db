@@ -19,7 +19,7 @@ class Data {
     this.stream = new EvEmitter()
     this.setupDir(source)
 
-    for (t in this.types) {
+    for (var t in this.types) {
       this.stream.on(t, o => {
         if (!this.batch) puts(o)
         this.save(t, o.identifier, o)

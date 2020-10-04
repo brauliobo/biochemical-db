@@ -1,14 +1,23 @@
-const elasticsearch = require('elasticsearch')
+const { Client } = require('@elastic/elasticsearch')
 
 class Index {
 
   constructor(name) {
     this.name   = name
-    this.client = new elasticsearch.Client({node: 'http://localhost:9200'})
   }
 
-  async index(obj) {
-    return await this.client.index({index: this.name, body: obj, refresh: 'wait_for'})
+  async connect() {
+    this.client = new Client({ node: 'http://localhost:9200' })
+    this.client.indices.create({index: this.name}).catch(puts)
+    await this.client.ping().then(a => {console.log('server ping')})
+  }
+
+  async index(o) {
+    puts(`${o.id}: indexing`)
+    await this.client
+      .index({id: o.id, index: this.name, body: o})
+      .then( () => puts(`${o.id}: finished indexing`))
+      .catch(() => puts(`${o.id}: failed to index`))
   }
 
   search(query) {

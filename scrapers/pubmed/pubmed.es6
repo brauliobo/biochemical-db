@@ -20,16 +20,15 @@ pubmed = {
     })
   },
 
-  index(id) {
-    puts(`${id}: indexing article`)
-    this.article(id).then(async obj => {
+  async index(id) {
+    await this.article(id).then(async obj => {
       await this.searchIndex.index(obj)
     }).catch((e) => puts(`${id}: ${e}`))
   },
 
   async indexAll() {
-    await this.searchIndex.deleteAll()
-    for (const f of fs.readdirSync(this.articlesDir)) {
+    await this.searchIndex.connect()
+    for await (const f of fs.readdirSync(this.articlesDir)) {
       var id = f.split('.').slice(0, -1).join('.')
       await this.index(id)
     }

@@ -4,20 +4,20 @@
     "type": "GPLv3"
   },
   "dependencies": {
-    "basic-ftp": "latest",
+    "basic-ftp": "^4.6.2",
     "crypto": "latest",
-    "csv-parser": "latest",
-    "elasticsearch": "^16.6.0",
-    "js-yaml": "latest",
+    "csv-parser": "^2.3.3",
+    "js-yaml": "^3.14.0",
     "libxmljs-dom": "latest",
-    "lodash": "latest",
-    "node-fetch": "latest",
+    "lodash": "^4.17.20",
+    "needle": "~1.6.0",
+    "node-fetch": "^2.6.1",
     "osmosis": "latest",
     "querystring": "latest",
-    "tar-stream": "latest",
-    "xmldom": "latest",
+    "tar-stream": "^2.1.4",
+    "xmldom": "^0.3.0",
     "zlib": "latest",
-    "needle": "~1.6.0"
+    "@elastic/elasticsearch": "^7.9.0"
   },
   "devDependencies": {
     "pryjs": "^1.0.3"
