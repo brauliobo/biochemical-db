@@ -18,6 +18,9 @@ class Index {
       .index({id: o.id, index: this.name, body: o})
       .then( () => puts(`${o.id}: finished indexing`))
       .catch(() => puts(`${o.id}: failed to index`))
+
+    if (parseInt(Math.random()*100) == 50)
+      await this.client.indices.refresh({index: this.name})
   }
 
   search(query) {
