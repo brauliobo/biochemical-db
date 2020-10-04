@@ -22,6 +22,9 @@ pubmed = {
   },
 
   async index(id) {
+    if (await this.searchIndex.hasId(id))
+      return puts(`${id}: skipping`)
+
     await this.article(id).then(async obj => {
       await this.searchIndex.index(obj)
     }).catch((e) => puts(`${id}: ${e}`))
