@@ -3,12 +3,13 @@ const { Client } = require('@elastic/elasticsearch')
 class Index {
 
   constructor(name) {
-    this.name   = name
+    this.name = name
+    this.connect()
   }
 
   async connect() {
     this.client = new Client({ node: 'http://localhost:9200' })
-    this.client.indices.create({index: this.name}).catch(puts)
+    this.client.indices.create({index: this.name}).catch()
     await this.client.ping().then(a => {console.log('server ping')})
   }
 

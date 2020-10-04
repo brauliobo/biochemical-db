@@ -31,7 +31,6 @@ pubmed = {
   },
 
   async indexAll() {
-    await this.searchIndex.connect()
     for await (const f of fs.readdirSync(this.articlesDir)) {
       var id = f.split('.').slice(0, -1).join('.')
       await this.indexQueue.enqueue(() => this.index(id))
@@ -39,22 +38,25 @@ pubmed = {
   },
 
   article(id) {
-    var xml = fs.readFileSync(`${this.articlesDir}/${id}.nxml`, 'utf8')
-    //parseHtml doesnt work with a <body> tag
-    var doc = libxml.parseHtmlFragment(xml, {huge: true})
-    if (!doc.querySelector('article'))
-      throw '<article> tag not found'
+    return new Promise((resolve, reject) => {
+      var xml = fs.readFileSync(`${this.articlesDir}/${id}.nxml`, 'utf8')
+      //parseHtml doesnt work with a <body> tag
+      var doc = libxml.parseHtmlFragment(xml, {huge: true})
+      if (!doc.querySelector('article'))
+        throw '<article> tag not found'
 
-    var title    = doc.querySelector('article-title')
-    var abstract = doc.querySelector('abstract')
-    var body     = doc.querySelector('body')
-    var obj = {
-      id:       id,
-      title:    title ? title.innerText.trim() : null,
-      abstract: abstract ? abstract.innerText.trim() : null,
-      body:     body ? body.innerText.trim() : null,
-    }
-    return Promise.resolve(obj)
+      var title    = doc.querySelector('article-title')
+      var abstract = doc.querySelector('abstract')
+      var body     = doc.querySelector('body')
+      var obj = {
+        id:       id,
+        title:    title ? title.innerText.trim() : null,
+        abstract: abstract ? abstract.innerText.trim() : null,
+        body:     body ? body.innerText.trim() : null,
+      }
+
+      resolve(obj)
+    })
   },
 
   articles: {
