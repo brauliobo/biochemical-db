@@ -9,7 +9,7 @@
     "csv-parser": "^2.3.3",
     "js-yaml": "^3.14.0",
     "libxmljs-dom": "latest",
-    "lodash": "^4.17.20",
+    "lodash": "^4.17.21",
     "needle": "~1.6.0",
     "node-fetch": "^2.6.1",
     "osmosis": "latest",
