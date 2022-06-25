@@ -11,7 +11,7 @@
     "libxmljs-dom": "latest",
     "lodash": "^4.17.20",
     "needle": "~1.6.0",
-    "node-fetch": "^2.6.1",
+    "node-fetch": "^2.6.7",
     "osmosis": "latest",
     "querystring": "latest",
     "tar-stream": "^2.1.4",
