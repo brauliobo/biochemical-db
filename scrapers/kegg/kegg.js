@@ -195,7 +195,7 @@ kegg = {
       this.doc   = doc
       this.url   = url
       this.id    = id
-      this.table = doc.querySelector('form table table')
+      this.table = doc.querySelector('table.w2[width="650"]')
     }
 
     externalLinks() {
