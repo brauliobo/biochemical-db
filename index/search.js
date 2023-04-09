@@ -1,4 +1,4 @@
-require('../lib/all.es6')
+require('../lib/all.js')
 
 var index = new Index('articles')
 eval(pry.it)

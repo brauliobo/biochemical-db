@@ -1,9 +1,9 @@
-require('../lib/all.es6')
+require('../lib/all.js')
 
 xmldom = require('xmldom')
 _      = require('lodash')
 
-require(`./${args.source}/${args.source}.es6`)
+require(`./${args.source}/${args.source}.js`)
 
 async function init() {
   //await new Promise(resolve => setTimeout(resolve, 5000))
